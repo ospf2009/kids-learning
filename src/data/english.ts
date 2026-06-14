@@ -1,0 +1,121 @@
+// 🔤 英语学习数据 - 一年级下册
+export interface EnglishLesson {
+  id: string
+  title: string
+  type: 'alphabet' | 'word' | 'phrase' | 'song' | 'bubble'
+  icon: string
+  description: string
+  gameMode: 'choice' | 'bubble' | 'match' | 'song'
+  items: EnglishItem[]
+}
+
+export interface EnglishItem {
+  id: string
+  content: string
+  chinese: string
+  answer: string
+  options?: string[]
+  hint?: string
+  image?: string
+  matchPairs?: MatchPair[]
+}
+
+export interface MatchPair {
+  id: string
+  english: string
+  chinese: string
+  emoji: string
+}
+
+export const englishLessons: EnglishLesson[] = [
+  {
+    id: 'alpha-1',
+    title: '字母好朋友',
+    type: 'alphabet',
+    icon: '🅰️',
+    description: '认识26个字母朋友',
+    gameMode: 'choice',
+    items: [
+      { id: 'al1', content: 'A 后面是哪个字母？', chinese: 'A后面是谁？', answer: 'B', options: ['B', 'C', 'D', 'A'], hint: 'A-B-C-D...' },
+      { id: 'al2', content: '哪个字母像耳朵？', chinese: '长得像耳朵的字母', answer: 'E', options: ['E', 'F', 'G', 'H'], hint: 'Ear（耳朵）的第一个字母' },
+      { id: 'al3', content: '哪个字母像蛇？', chinese: '弯弯曲曲像蛇的', answer: 'S', options: ['S', 'Z', 'C', 'O'], hint: 'Snake（蛇）的第一个字母' },
+      { id: 'al4', content: '哪个字母像太阳？', chinese: '圆圆的像太阳', answer: 'O', options: ['O', 'Q', 'C', 'D'], hint: '圆圆的形状' },
+    ]
+  },
+  {
+    id: 'word-1',
+    title: '单词魔法箱',
+    type: 'word',
+    icon: '📦',
+    description: '打开魔法箱，发现新单词',
+    gameMode: 'choice',
+    items: [
+      { id: 'w1', content: '🍎 这是什么？', chinese: '苹果', answer: 'apple', options: ['apple', 'banana', 'orange', 'grape'], hint: '红色的，圆圆的水果' },
+      { id: 'w2', content: '🐱 这是什么？', chinese: '猫咪', answer: 'cat', options: ['cat', 'dog', 'bird', 'fish'], hint: '喵喵叫的小动物' },
+      { id: 'w3', content: '🐶 这是什么？', chinese: '小狗', answer: 'dog', options: ['dog', 'cat', 'pig', 'duck'], hint: '汪汪叫的小动物' },
+      { id: 'w4', content: '☀️ 这是什么？', chinese: '太阳', answer: 'sun', options: ['sun', 'moon', 'star', 'cloud'], hint: '白天出来，暖暖的' },
+      { id: 'w5', content: '🌙 这是什么？', chinese: '月亮', answer: 'moon', options: ['moon', 'sun', 'star', 'sky'], hint: '晚上出来，弯弯的' },
+    ]
+  },
+  {
+    id: 'word-bubble',
+    title: '单词泡泡龙',
+    type: 'bubble',
+    icon: '🫧',
+    description: '点击正确的英文单词泡泡',
+    gameMode: 'bubble',
+    items: [
+      { id: 'wb1', content: '🍎 苹果', chinese: '苹果', answer: 'apple', options: ['apple', 'appel', 'aple', 'appl', 'abple', 'aplle'], hint: 'a-p-p-l-e' },
+      { id: 'wb2', content: '🐱 猫咪', chinese: '猫咪', answer: 'cat', options: ['cat', 'cta', 'act', 'catt', 'kat', 'caat'], hint: 'c-a-t' },
+      { id: 'wb3', content: '🐶 小狗', chinese: '小狗', answer: 'dog', options: ['dog', 'dgo', 'god', 'doge', 'doog', 'dgog'], hint: 'd-o-g' },
+      { id: 'wb4', content: '🐟 鱼', chinese: '鱼', answer: 'fish', options: ['fish', 'fsh', 'fih', 'fihs', 'fissh', 'phish'], hint: 'f-i-s-h' },
+      { id: 'wb5', content: '🐦 小鸟', chinese: '小鸟', answer: 'bird', options: ['bird', 'brd', 'bire', 'biid', 'birdd', 'bired'], hint: 'b-i-r-d' },
+    ]
+  },
+  {
+    id: 'color-1',
+    title: '颜色万花筒',
+    type: 'word',
+    icon: '🌈',
+    description: '五颜六色的颜色单词',
+    gameMode: 'match',
+    items: [
+      {
+        id: 'cl1', content: '配对颜色', chinese: '颜色配对', answer: 'match',
+        matchPairs: [
+          { id: 'm1', english: 'red', chinese: '红色', emoji: '🔴' },
+          { id: 'm2', english: 'blue', chinese: '蓝色', emoji: '🔵' },
+          { id: 'm3', english: 'green', chinese: '绿色', emoji: '🟢' },
+          { id: 'm4', english: 'yellow', chinese: '黄色', emoji: '🟡' },
+        ]
+      },
+    ]
+  },
+  {
+    id: 'phrase-1',
+    title: '礼貌小达人',
+    type: 'phrase',
+    icon: '🤝',
+    description: '学会说礼貌用语',
+    gameMode: 'choice',
+    items: [
+      { id: 'ph1', content: '早上好怎么说？', chinese: '早上好', answer: 'Good morning', options: ['Good morning', 'Good night', 'Goodbye', 'Hello'], hint: '早上起床说的话' },
+      { id: 'ph2', content: '谢谢怎么说？', chinese: '谢谢', answer: 'Thank you', options: ['Thank you', 'Sorry', 'Please', 'Hello'], hint: '别人帮助你说的话' },
+      { id: 'ph3', content: '对不起怎么说？', chinese: '对不起', answer: 'Sorry', options: ['Sorry', 'Thank you', 'Please', 'Hello'], hint: '做错事说的话' },
+      { id: 'ph4', content: '再见怎么说？', chinese: '再见', answer: 'Goodbye', options: ['Goodbye', 'Hello', 'Thank you', 'Please'], hint: '分开时说的话' },
+    ]
+  },
+  {
+    id: 'song-1',
+    title: '儿歌欢唱',
+    type: 'song',
+    icon: '🎵',
+    description: '唱好听的英文儿歌',
+    gameMode: 'song',
+    items: [
+      { id: 'sg1', content: 'Twinkle twinkle little ___', chinese: '一闪一闪亮晶晶', answer: 'star', options: ['star', 'moon', 'sun', 'light'], hint: '天上的小星星' },
+      { id: 'sg2', content: 'ABCD, next is ___', chinese: 'ABCD后面是', answer: 'E', options: ['E', 'F', 'G', 'H'], hint: '字母歌继续唱' },
+      { id: 'sg3', content: 'Old MacDonald had a ___', chinese: '老麦当劳有一个', answer: 'farm', options: ['farm', 'house', 'car', 'dog'], hint: '他有一个农场' },
+    ]
+  }
+]

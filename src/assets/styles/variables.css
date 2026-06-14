@@ -1,0 +1,63 @@
+/* 🎨 儿童学习乐园 - 设计变量 */
+:root {
+  /* === 主题色 === */
+  --color-primary: #FF6B6B;       /* 珊瑚红 - 活力 */
+  --color-secondary: #4ECDC4;     /* 薄荷绿 - 清新 */
+  --color-accent: #FFE66D;        /* 向日葵黄 - 温暖 */
+  --color-purple: #A78BFA;        /* 薰衣草紫 - 梦幻 */
+  --color-blue: #60A5FA;          /* 天空蓝 - 舒适 */
+  --color-orange: #FB923C;        /* 橙子橙 - 甜蜜 */
+  --color-pink: #F472B6;          /* 樱花粉 - 可爱 */
+
+  /* === 科目色 === */
+  --color-chinese: #FF6B6B;       /* 语文 - 珊瑚红 */
+  --color-math: #4ECDC4;          /* 数学 - 薄荷绿 */
+  --color-english: #60A5FA;       /* 英语 - 天空蓝 */
+
+  /* === 背景色 === */
+  --bg-main: #FFF9F0;             /* 奶油白 - 主背景 */
+  --bg-card: #FFFFFF;             /* 卡片白 */
+  --bg-header: #FFFAF5;           /* 头部暖白 */
+
+  /* === 文字色 === */
+  --text-primary: #2D3436;        /* 主文字 */
+  --text-secondary: #636E72;      /* 次文字 */
+  --text-light: #B2BEC3;          /* 浅文字 */
+
+  /* === 圆角 === */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-full: 9999px;
+
+  /* === 阴影 === */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --shadow-glow: 0 0 20px rgba(255, 107, 107, 0.3);
+
+  /* === 字体 === */
+  --font-family: 'HarmonyOS Sans', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 20px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 32px;
+  --font-size-3xl: 48px;
+
+  /* === 间距 === */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* === 动画 === */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  --bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
