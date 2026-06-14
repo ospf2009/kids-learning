@@ -24,7 +24,10 @@ const strokePaths: Record<string, string> = {
   '弯钩': 'M 100 30 Q 120 100 100 150 Q 80 130 90 110',
 }
 
-const currentPath = computed(() => strokePaths[props.strokes[currentStroke.value]] || '')
+const currentPath = computed(() => {
+  const stroke = props.strokes[currentStroke.value]
+  return stroke ? strokePaths[stroke] || '' : ''
+})
 
 // 监听字符变化，重置状态
 watch(() => props.character, () => {

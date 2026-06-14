@@ -42,7 +42,7 @@ function startGame() {
       x: Math.random() * (gameWidth - starSize),
       y: -starSize,
       speed: 1.5 + Math.random() * 1.5,
-      emoji: starEmojis[Math.floor(Math.random() * starEmojis.length)]
+      emoji: starEmojis[Math.floor(Math.random() * starEmojis.length)] || '⭐'
     })
   }, 1200)
 
@@ -143,7 +143,7 @@ function draw() {
   paddleGradient.addColorStop(1, '#FF8E8E')
   ctx.fillStyle = paddleGradient
   ctx.beginPath()
-  ctx.roundRect(playerX.value, gameHeight - playerHeight - 10, playerWidth, playerHeight, 10)
+  ;(ctx as any).roundRect(playerX.value, gameHeight - playerHeight - 10, playerWidth, playerHeight, 10)
   ctx.fill()
 
   // 画分数和生命
@@ -170,6 +170,7 @@ function handleTouch(e: TouchEvent) {
   if (!isPlaying.value) return
   e.preventDefault()
   const touch = e.touches[0]
+  if (!touch) return
   const rect = canvas.value?.getBoundingClientRect()
   if (!rect) return
   const x = touch.clientX - rect.left

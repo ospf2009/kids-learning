@@ -39,7 +39,7 @@ export const useUserStore = defineStore('user', () => {
   const currentLevel = computed(() => getCurrentLevel(stars.value))
   const nextLevel = computed(() => getNextLevel(stars.value))
   const levelProgress = computed(() => {
-    if (!nextLevel.value) return 100
+    if (!nextLevel.value || !currentLevel.value) return 100
     const current = stars.value - currentLevel.value.minStars
     const needed = nextLevel.value.minStars - currentLevel.value.minStars
     return Math.min(100, Math.round((current / needed) * 100))
@@ -104,12 +104,12 @@ export const useUserStore = defineStore('user', () => {
     if (!completedLessons.value[subject]) {
       completedLessons.value[subject] = []
     }
-    if (!completedLessons.value[subject].includes(lessonId)) {
-      completedLessons.value[subject].push(lessonId)
+    if (!completedLessons.value[subject]!.includes(lessonId)) {
+      completedLessons.value[subject]!.push(lessonId)
     }
 
     // 更新连续学习
-    const today = new Date().toISOString().split('T')[0]
+    const today = new Date().toISOString().split('T')[0] || ''
     if (lastStudyDate.value !== today) {
       streak.value++
       lastStudyDate.value = today
@@ -147,7 +147,7 @@ export const useUserStore = defineStore('user', () => {
       achievements: achievements.value,
       badges: badges.value,
       dailyTasks: dailyTasks.value,
-      todayDate: new Date().toISOString().split('T')[0],
+      todayDate: new Date().toISOString().split('T')[0] || '',
     }
     localStorage.setItem('kids-learning-user', JSON.stringify(data))
   }
@@ -162,9 +162,9 @@ export const useUserStore = defineStore('user', () => {
       stars.value = data.stars || 0
       streak.value = data.streak || 0
       lastStudyDate.value = data.lastStudyDate || ''
-      completedLessons.value = data.completedLessons || {}
-      achievements.value = data.achievements || []
-      badges.value = data.badges || []
+      completedLessons.value = (data.completedLessons || {}) as Record<string, string[]>
+      achievements.value = (data.achievements || []) as string[]
+      badges.value = (data.badges || []) as string[]
       dailyTasks.value = data.dailyTasks || []
     } catch (e) {
       console.error('Failed to load user data:', e)

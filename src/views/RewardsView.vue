@@ -41,15 +41,15 @@ const levelInfo = computed(() => {
         <div class="balance-label">我的星星</div>
       </div>
       <div class="level-badge">
-        {{ levelInfo.current.icon }} {{ levelInfo.current.name }}
+        {{ levelInfo.current?.icon }} {{ levelInfo.current?.name }}
       </div>
     </div>
 
     <!-- 等级进度 -->
     <div class="level-progress" v-if="levelInfo.next">
       <div class="level-info">
-        <span>{{ levelInfo.current.icon }} {{ levelInfo.current.name }}</span>
-        <span>{{ levelInfo.next.icon }} {{ levelInfo.next.name }}</span>
+        <span>{{ levelInfo.current?.icon }} {{ levelInfo.current?.name }}</span>
+        <span>{{ levelInfo.next?.icon }} {{ levelInfo.next?.name }}</span>
       </div>
       <div class="progress-bar">
         <div class="fill" :style="{ width: userStore.levelProgress + '%' }"></div>

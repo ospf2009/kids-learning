@@ -38,12 +38,12 @@ function goToGames() {
     <header class="header">
       <div class="greeting-section">
         <div class="avatar" @click="goToRewards">
-          {{ userStore.currentLevel.icon }}
+          {{ userStore.currentLevel?.icon }}
         </div>
         <div class="greeting-text">
           <h1>{{ greeting }}，{{ userStore.name }}！</h1>
           <p class="level-info">
-            {{ userStore.currentLevel.name }}
+            {{ userStore.currentLevel?.name }}
             <span class="stars">⭐ {{ userStore.stars }}</span>
           </p>
         </div>

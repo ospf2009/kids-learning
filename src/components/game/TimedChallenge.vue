@@ -39,7 +39,7 @@ function startTimer() {
 }
 
 function selectAnswer(option: string | number) {
-  if (showResult.value || isFinished.value) return
+  if (showResult.value || isFinished.value || !currentItem.value) return
   selectedAnswer.value = option
   isCorrect.value = String(option) === String(currentItem.value.answer)
   showResult.value = true

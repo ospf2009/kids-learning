@@ -58,11 +58,11 @@ export const levels = [
 // 获取当前等级
 export function getCurrentLevel(stars: number) {
   for (let i = levels.length - 1; i >= 0; i--) {
-    if (stars >= levels[i].minStars) {
-      return levels[i]
+    if (stars >= levels[i]!.minStars) {
+      return levels[i]!
     }
   }
-  return levels[0]
+  return levels[0]!
 }
 
 // 获取下一等级
