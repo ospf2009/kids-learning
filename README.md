@@ -1,42 +1,93 @@
-# kids-learning
+# 学习乐园 🌟
 
-This template should help get you started developing with Vue 3 in Vite.
+一款专为一年级小朋友设计的互动学习应用，涵盖语文、数学、英语三大学科，通过游戏化的方式激发学习兴趣。
 
-## Recommended IDE Setup
+## ✨ 功能特色
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+### 📖 语文乐园
 
-## Recommended Browser Setup
+- **拼音泡泡龙** — 点击正确的拼音，学习汉字发音
+- **汉字小画家** — 学习汉字结构和组字规律
+- **古诗花园** — 欣赏经典古诗，了解诗人背景
+- **笔画练习** — 跟踪汉字书写笔顺
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+### 🔢 数学王国
 
-## Type Support for `.vue` Imports in TS
+- **口算大闯关** — 限时挑战，提升计算速度
+- **拖拽数数** — 通过拖拽操作理解数字概念
+- **图形认知** — 学习基本几何图形
+- **凑十法** — 掌握凑十法计算技巧
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+### 🔤 英语天地
 
-## Customize configuration
+- **字母泡泡龙** — 学习英文字母和发音
+- **单词配对** — 匹配英文单词和图片
+- **颜色学习** — 认识常见颜色的英文表达
+- **英语儿歌** — 通过歌曲学习英语
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+### 🎮 游戏中心
 
-## Project Setup
+- **接星星** — 左右滑动接住星星，避开炸弹，考验反应能力
+- **贪吃蛇** — 经典游戏，锻炼手眼协调（即将推出）
+- **打地鼠** — 从洞里冒出来就敲它（即将推出）
 
-```sh
+### 🏆 奖励系统
+
+- **星星收集** — 完成学习任务获得星星
+- **等级成长** — 从小星星到超级学霸，共 6 个等级
+- **成就解锁** — 完成特定挑战获得成就徽章
+- **道具兑换** — 用星星兑换可爱的徽章和道具
+- **连续学习** — 记录连续学习天数，培养学习习惯
+
+### 📊 学习统计
+
+- **今日任务** — 每日学习目标追踪
+- **学习进度** — 可视化展示各科学习完成度
+- **错题回顾** — 记录错误题目，便于复习
+
+## 🎨 设计风格
+
+- **马卡龙配色** — 温柔可爱的色彩搭配
+- **大字体大按钮** — 适合小朋友操作
+- **流畅动画** — 丰富的过渡和交互动画
+- **响应式布局** — 支持手机、平板、电脑多种设备
+
+## 🛠️ 技术栈
+
+- **前端框架**: Vue 3 + TypeScript
+- **构建工具**: Vite
+- **状态管理**: Pinia
+- **路由**: Vue Router
+- **数据存储**: LocalStorage（本地保存学习进度）
+
+## 🚀 快速开始
+
+```bash
+# 安装依赖
 npm install
-```
 
-### Compile and Hot-Reload for Development
-
-```sh
+# 启动开发服务器
 npm run dev
-```
 
-### Type-Check, Compile and Minify for Production
-
-```sh
+# 构建生产版本
 npm run build
 ```
+
+## 📱 访问方式
+
+在线访问: https://ospf2009.github.io/kids-learning/
+
+## 📝 更新日志
+
+### v1.0.0 (2026-06-14)
+- 🎉 首次发布
+- 📖 语文模块：拼音、汉字、古诗
+- 🔢 数学模块：口算、数数、图形
+- 🔤 英语模块：字母、单词、颜色
+- 🎮 游戏中心：接星星小游戏
+- 🏆 奖励系统：星星、等级、成就
+- 📊 学习统计：进度追踪、每日任务
+
+---
+
+**专为一年级小朋友打造，让学习变得有趣！** 🌈
