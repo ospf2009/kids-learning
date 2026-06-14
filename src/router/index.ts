@@ -43,6 +43,11 @@ const router = createRouter({
       name: 'rewards',
       component: () => import('@/views/RewardsView.vue'),
     },
+    {
+      path: '/games',
+      name: 'games',
+      component: () => import('@/views/GamesView.vue'),
+    },
   ],
 })
 

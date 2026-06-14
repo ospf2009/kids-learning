@@ -26,6 +26,10 @@ function goToSubject(route: string) {
 function goToRewards() {
   router.push('/rewards')
 }
+
+function goToGames() {
+  router.push('/games')
+}
 </script>
 
 <template>
@@ -90,6 +94,19 @@ function goToRewards() {
           <span class="summary-label">获得星星</span>
           <span class="summary-value">⭐ {{ userStore.stars }}</span>
         </div>
+      </div>
+    </section>
+
+    <!-- 游戏入口 -->
+    <section class="games">
+      <h2 class="section-title">🎮 游戏中心</h2>
+      <div class="game-card" @click="goToGames">
+        <div class="game-icon">🌟</div>
+        <div class="game-info">
+          <div class="game-name">接星星</div>
+          <div class="game-desc">接住星星避开炸弹，看你能得多少分！</div>
+        </div>
+        <div class="game-arrow">→</div>
       </div>
     </section>
 
@@ -321,6 +338,68 @@ function goToRewards() {
   font-size: var(--font-size-lg);
   font-weight: 700;
   color: var(--color-primary);
+}
+
+/* === 游戏入口 === */
+.games {
+  margin-bottom: var(--space-xl);
+}
+
+.game-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  background: linear-gradient(135deg, #FFF0F0, #FFE8E8);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  cursor: pointer;
+  transition: all var(--transition-normal) var(--bounce);
+  box-shadow: var(--shadow-sm);
+  border: 3px solid transparent;
+}
+
+.game-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary);
+}
+
+.game-icon {
+  font-size: 40px;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-primary), #FF8E8E);
+  border-radius: var(--radius-md);
+}
+
+.game-info {
+  flex: 1;
+}
+
+.game-name {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.game-desc {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.game-arrow {
+  font-size: var(--font-size-lg);
+  color: var(--color-primary);
+  font-weight: 700;
+  transition: transform var(--transition-normal);
+}
+
+.game-card:hover .game-arrow {
+  transform: translateX(4px);
 }
 
 /* === 学科入口 === */
