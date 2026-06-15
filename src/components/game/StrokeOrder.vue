@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { playCorrectSound, playClickSound, speakCorrect } from '@/utils/sound'
 
 const props = defineProps<{
   character: string
@@ -41,6 +42,7 @@ watch(() => props.character, () => {
 function nextStroke() {
   if (currentStroke.value < props.strokes.length - 1) {
     isAnimating.value = true
+    playClickSound()
     setTimeout(() => {
       currentStroke.value++
       isAnimating.value = false
@@ -48,6 +50,8 @@ function nextStroke() {
   } else {
     showResult.value = true
     isCorrect.value = true
+    playCorrectSound()
+    speakCorrect()
     props.onComplete(true)
   }
 }

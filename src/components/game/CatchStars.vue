@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { playStarSound, playBombSound, playVictorySound } from '@/utils/sound'
 
 const props = defineProps<{
   onComplete: (score: number) => void
@@ -81,6 +82,7 @@ function gameLoop() {
       star.x < playerX.value + playerWidth
     ) {
       score.value += 10
+      playStarSound()
       return false
     }
     return true
@@ -95,6 +97,7 @@ function gameLoop() {
       bomb.x < playerX.value + playerWidth
     ) {
       lives.value--
+      playBombSound()
       if (lives.value <= 0) {
         endGame()
       }
@@ -163,6 +166,7 @@ function endGame() {
   if (starTimer) clearInterval(starTimer)
   if (bombTimer) clearInterval(bombTimer)
   if (animationId) cancelAnimationFrame(animationId)
+  playVictorySound()
   props.onComplete(score.value)
 }
 

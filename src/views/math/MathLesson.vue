@@ -7,6 +7,7 @@ import { useGameStore } from '@/stores/game'
 import TimedChallenge from '@/components/game/TimedChallenge.vue'
 import DragCount from '@/components/game/DragCount.vue'
 import ShapeGame from '@/components/game/ShapeGame.vue'
+import { playCorrectSound, playWrongSound, playComboSound, speakCorrect, speakWrong, playVictorySound } from '@/utils/sound'
 
 const route = useRoute()
 const router = useRouter()
@@ -44,6 +45,13 @@ function selectAnswer(option: string | number) {
   showResult.value = true
   gameStore.answerQuestion(isCorrect.value)
   userStore.completeQuestion('math', isCorrect.value)
+  if (isCorrect.value) {
+    playCorrectSound()
+    speakCorrect()
+  } else {
+    playWrongSound()
+    speakWrong()
+  }
 }
 
 function nextQuestion() {
@@ -57,6 +65,7 @@ function nextQuestion() {
     userStore.completeLesson('math', lessonId)
     showCompletion.value = true
     gameStore.endGame()
+    playVictorySound()
   }
 }
 
@@ -67,6 +76,7 @@ function handleTimedComplete(score: number, correct: number, total: number) {
   userStore.completeLesson('math', lessonId)
   showCompletion.value = true
   gameStore.endGame()
+  playVictorySound()
 }
 
 function handleDragComplete(correct: boolean) {
@@ -74,6 +84,13 @@ function handleDragComplete(correct: boolean) {
   showResult.value = true
   gameStore.answerQuestion(correct)
   userStore.completeQuestion('math', correct)
+  if (correct) {
+    playCorrectSound()
+    speakCorrect()
+  } else {
+    playWrongSound()
+    speakWrong()
+  }
 }
 
 function handleShapeComplete(correct: boolean) {
@@ -81,6 +98,13 @@ function handleShapeComplete(correct: boolean) {
   showResult.value = true
   gameStore.answerQuestion(correct)
   userStore.completeQuestion('math', correct)
+  if (correct) {
+    playCorrectSound()
+    speakCorrect()
+  } else {
+    playWrongSound()
+    speakWrong()
+  }
 }
 
 function goBack() { router.push('/math') }

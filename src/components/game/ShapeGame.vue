@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { playCorrectSound, playWrongSound, speakCorrect, speakWrong } from '@/utils/sound'
 
 const props = defineProps<{
   question: string
@@ -47,6 +48,13 @@ function selectAnswer(option: string) {
   isCorrect.value = option === props.correctAnswer
   showResult.value = true
   props.onComplete(isCorrect.value)
+  if (isCorrect.value) {
+    playCorrectSound()
+    speakCorrect()
+  } else {
+    playWrongSound()
+    speakWrong()
+  }
 }
 </script>
 

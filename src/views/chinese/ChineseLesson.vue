@@ -7,6 +7,7 @@ import { useGameStore } from '@/stores/game'
 import BubbleGame from '@/components/game/BubbleGame.vue'
 import StrokeOrder from '@/components/game/StrokeOrder.vue'
 import PoemDisplay from '@/components/game/PoemDisplay.vue'
+import { playCorrectSound, playWrongSound, speakCorrect, speakWrong, playVictorySound } from '@/utils/sound'
 
 const route = useRoute()
 const router = useRouter()
@@ -44,6 +45,13 @@ function selectAnswer(option: string) {
   showResult.value = true
   gameStore.answerQuestion(isCorrect.value)
   userStore.completeQuestion('chinese', isCorrect.value)
+  if (isCorrect.value) {
+    playCorrectSound()
+    speakCorrect()
+  } else {
+    playWrongSound()
+    speakWrong()
+  }
 }
 
 function nextQuestion() {
@@ -57,6 +65,7 @@ function nextQuestion() {
     userStore.completeLesson('chinese', lessonId)
     showCompletion.value = true
     gameStore.endGame()
+    playVictorySound()
   }
 }
 
@@ -65,6 +74,7 @@ function handleBubbleComplete(correct: boolean) {
   showResult.value = true
   gameStore.answerQuestion(correct)
   userStore.completeQuestion('chinese', correct)
+  if (correct) { playCorrectSound(); speakCorrect() } else { playWrongSound(); speakWrong() }
 }
 
 function handleStrokeComplete(correct: boolean) {
@@ -72,6 +82,7 @@ function handleStrokeComplete(correct: boolean) {
   showResult.value = true
   gameStore.answerQuestion(correct)
   userStore.completeQuestion('chinese', correct)
+  if (correct) { playCorrectSound(); speakCorrect() } else { playWrongSound(); speakWrong() }
 }
 
 function handlePoemComplete(correct: boolean) {
@@ -79,6 +90,7 @@ function handlePoemComplete(correct: boolean) {
   showResult.value = true
   gameStore.answerQuestion(correct)
   userStore.completeQuestion('chinese', correct)
+  if (correct) { playCorrectSound(); speakCorrect() } else { playWrongSound(); speakWrong() }
 }
 
 function goBack() { router.push('/chinese') }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { playCorrectSound, playWrongSound, playClickSound, speakCorrect, speakWrong } from '@/utils/sound'
 
 interface DragItem {
   id: string
@@ -47,6 +48,7 @@ const displayItems = computed(() => {
 
 function toggleItem(id: string) {
   if (showResult.value) return
+  playClickSound()
   const index = droppedItems.value.indexOf(id)
   if (index === -1) {
     droppedItems.value.push(id)
@@ -60,6 +62,13 @@ function checkAnswer() {
   isCorrect.value = droppedItems.value.length === props.correctAnswer
   showResult.value = true
   props.onComplete(isCorrect.value)
+  if (isCorrect.value) {
+    playCorrectSound()
+    speakCorrect()
+  } else {
+    playWrongSound()
+    speakWrong()
+  }
 }
 </script>
 

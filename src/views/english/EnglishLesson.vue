@@ -6,6 +6,7 @@ import { useUserStore } from '@/stores/user'
 import { useGameStore } from '@/stores/game'
 import BubbleGame from '@/components/game/BubbleGame.vue'
 import MatchGame from '@/components/game/MatchGame.vue'
+import { playCorrectSound, playWrongSound, speakCorrect, speakWrong, playVictorySound } from '@/utils/sound'
 
 const route = useRoute()
 const router = useRouter()
@@ -43,6 +44,13 @@ function selectAnswer(option: string) {
   showResult.value = true
   gameStore.answerQuestion(isCorrect.value)
   userStore.completeQuestion('english', isCorrect.value)
+  if (isCorrect.value) {
+    playCorrectSound()
+    speakCorrect()
+  } else {
+    playWrongSound()
+    speakWrong()
+  }
 }
 
 function nextQuestion() {
@@ -56,6 +64,7 @@ function nextQuestion() {
     userStore.completeLesson('english', lessonId)
     showCompletion.value = true
     gameStore.endGame()
+    playVictorySound()
   }
 }
 
@@ -64,6 +73,7 @@ function handleBubbleComplete(correct: boolean) {
   showResult.value = true
   gameStore.answerQuestion(correct)
   userStore.completeQuestion('english', correct)
+  if (correct) { playCorrectSound(); speakCorrect() } else { playWrongSound(); speakWrong() }
 }
 
 function handleMatchComplete(correct: boolean) {
@@ -71,6 +81,7 @@ function handleMatchComplete(correct: boolean) {
   showResult.value = true
   gameStore.answerQuestion(correct)
   userStore.completeQuestion('english', correct)
+  if (correct) { playCorrectSound(); speakCorrect() } else { playWrongSound(); speakWrong() }
 }
 
 function goBack() { router.push('/english') }

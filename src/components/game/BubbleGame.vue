@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { playCorrectSound, playWrongSound, playClickSound, speakCorrect, speakWrong } from '@/utils/sound'
 
 const props = defineProps<{
   question: string
@@ -40,13 +41,17 @@ function popBubble(bubble: typeof bubbles.value[0]) {
   if (bubble.popped || isFinished.value) return
   
   bubble.popped = true
+  playClickSound()
 
   if (bubble.isCorrect) {
     isCorrect.value = true
     isFinished.value = true
+    playCorrectSound()
+    speakCorrect()
     setTimeout(() => props.onComplete(true), 600)
   } else {
     selectedWrong.value = true
+    playWrongSound()
     // 错误的泡泡，显示X后继续
     setTimeout(() => {
       selectedWrong.value = false

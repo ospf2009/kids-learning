@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { playCorrectSound, playWrongSound, playClickSound } from '@/utils/sound'
 
 interface MatchPair {
   id: string
@@ -36,12 +37,14 @@ const isComplete = computed(() => matchedPairs.value.length === props.pairs.leng
 function selectEnglish(id: string) {
   if (matchedPairs.value.includes(id) || wrongPair.value) return
   selectedEnglish.value = id
+  playClickSound()
   checkMatch()
 }
 
 function selectChinese(id: string) {
   if (matchedPairs.value.includes(id) || wrongPair.value) return
   selectedChinese.value = id
+  playClickSound()
   checkMatch()
 }
 
@@ -54,10 +57,14 @@ function checkMatch() {
     selectedChinese.value = null
 
     if (isComplete.value) {
-      setTimeout(() => props.onComplete(true), 500)
+      setTimeout(() => {
+        playCorrectSound()
+        props.onComplete(true)
+      }, 500)
     }
   } else {
     wrongPair.value = true
+    playWrongSound()
     setTimeout(() => {
       selectedEnglish.value = null
       selectedChinese.value = null

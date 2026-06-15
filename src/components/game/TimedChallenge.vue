@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { playCorrectSound, playWrongSound, speakCorrect, speakWrong, playUrgentSound, playVictorySound } from '@/utils/sound'
 
 const props = defineProps<{
   items: Array<{ id: string; question: string; answer: number | string; options?: (number | string)[] }>
@@ -34,6 +35,8 @@ function startTimer() {
     timeLeft.value--
     if (timeLeft.value <= 0) {
       finishGame()
+    } else if (timeLeft.value <= 10 && timeLeft.value % 2 === 0) {
+      playUrgentSound()
     }
   }, 1000)
 }
@@ -48,8 +51,12 @@ function selectAnswer(option: string | number) {
     combo.value++
     correctCount.value++
     score.value += 10 * Math.min(combo.value, 3)
+    playCorrectSound()
+    speakCorrect()
   } else {
     combo.value = 0
+    playWrongSound()
+    speakWrong()
   }
 
   setTimeout(() => {
@@ -66,6 +73,7 @@ function selectAnswer(option: string | number) {
 function finishGame() {
   if (timer) clearInterval(timer)
   isFinished.value = true
+  playVictorySound()
   props.onComplete(score.value, correctCount.value, props.items.length)
 }
 </script>
