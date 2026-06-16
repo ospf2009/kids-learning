@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="/kids-learning/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学习乐园</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Material Icons -->
+    <style>
+    .icon { font-size: 24px; line-height: 1; }
+    .icon-sm { font-size: 18px; }
+    .icon-lg { font-size: 32px; }
+    .icon-xl { font-size: 48px; }
+    </style>
+    <script type="module" src="/kids-learning/assets/index-CmPx2fQk.js"></script>
+    <link rel="stylesheet" href="/kids-learning/assets/style-B7R8uipP.css">
+  </head>
+  <body>
+    <div id="app">
+      <p style="text-align:center;padding:40px;font-size:16px;color:#666;">加载中...</p>
+    </div>
+    <!-- 错误捕获：记录 JS 异常 -->
+    <script>
+    window.__kidsErrors = [];
+    window.onerror = function(msg, url, line, col, err) {
+      window.__kidsErrors.push({msg: msg, url: url, line: line, col: col});
+      return true;
+    };
+    window.addEventListener('unhandledrejection', function(e) {
+      window.__kidsErrors.push({msg: 'Unhandled Promise: ' + (e.reason ? e.reason.message || e.reason : 'unknown')});
+    });
+    // 检测脚本是否加载：检查 ES module 支持
+    window.__supportsModule = typeof document.createElement('script').type === 'string';
+    window.__scriptTag = document.querySelector('script[type=module]') ? 'found' : 'missing';
+    // 降级检测
+    setTimeout(function() {
+      var app = document.getElementById('app');
+      if (!app) return;
+      var hasVueContent = app.querySelector('.app-container') || (app.children.length > 0 && !app.querySelector('p[style]'));
+      var detail = '';
+      if (window.__kidsErrors.length > 0) {
+        detail = '<div style="text-align:left;margin:8px 20px;padding:8px;background:#ffe0e0;border-radius:6px;font-size:12px;">';
+        detail += '<b>JS Errors:</b><br>';
+        for (var i = 0; i < window.__kidsErrors.length; i++) {
+          detail += (i+1) + '. ' + (window.__kidsErrors[i].msg || '?') + '<br>';
+        }
+        detail += '</div>';
+        app.innerHTML += detail;
+      }
+      if (!hasVueContent) {
+        app.innerHTML = '<div style="text-align:center;padding:20px;font-size:14px;color:#333;">'
+          + '<p style="font-size:16px;margin-bottom:12px;">页面加载失败</p>'
+          + '<p style="font-size:12px;color:#999;">Module: ' + window.__supportsModule + ' | script: ' + window.__scriptTag + '</p>'
+          + detail
+          + '<p style="margin-top:12px;font-size:12px;color:#999;">请截图发给开发者</p>'
+          + '</div>';
+      }
+      
+    }, 8000);
+    </script>
+  </body>
+</html>
