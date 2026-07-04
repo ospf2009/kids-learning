@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 const GRID_SIZE = 13
 const CELL_SIZE = 20
@@ -21,7 +21,7 @@ const isPlaying = ref(false)
 const gameSpeed = ref(180)
 
 let gameLoop: ReturnType<typeof setInterval> | null = null
-let canvasEl: HTMLCanvasElement | null = null
+const canvasRef = ref<HTMLCanvasElement | null>(null)
 let ctx: CanvasRenderingContext2D | null = null
 
 // 加载最高分
@@ -299,8 +299,9 @@ function draw() {
 }
 
 onMounted(() => {
-  canvasEl = document.querySelector('canvas')
-  if (canvasEl) ctx = canvasEl.getContext('2d')
+  if (canvasRef.value) {
+    ctx = canvasRef.value.getContext('2d')
+  }
   draw()
   window.addEventListener('keydown', handleKey)
 })
@@ -331,7 +332,7 @@ onUnmounted(() => {
     <div class="canvas-area"
       @touchstart.prevent="handleTouchStart"
       @touchend.prevent="handleTouchEnd">
-      <canvas ref="canvasEl"
+      <canvas ref="canvasRef"
         :width="CANVAS_SIZE"
         :height="CANVAS_SIZE"
         class="snake-canvas" />
