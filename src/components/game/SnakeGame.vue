@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 
-const GRID_SIZE = 15
-const CELL_SIZE = 20
+const GRID_SIZE = 17
+const CELL_SIZE = 22
 const CANVAS_SIZE = GRID_SIZE * CELL_SIZE
 type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'
 interface Point { x: number; y: number }
@@ -393,7 +393,7 @@ function draw() {
 .snake-canvas {
   display: block;
   width: 100%;
-  max-width: 340px;
+  max-width: min(calc(100vw - 32px), 480px);
   image-rendering: auto;
 }
 
