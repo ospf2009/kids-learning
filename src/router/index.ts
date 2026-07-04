@@ -87,37 +87,29 @@ const router = createRouter({
   ],
 })
 
-// 路由守卫
-router.beforeEach(async (to, from, next) => {
-  let guardTimer: ReturnType<typeof setTimeout> | null = null
-  
-  // 安全超时：3秒后强制放行，防止卡死
-  const fallback = setTimeout(() => {
-    console.warn('[Router guard] timeout, force next()')
-    next()
-  }, 3000)
+// 路由守卫 — 轻量快速，不等待异步操作
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore()
+  const saved = localStorage.getItem('kids-learning-current-user')
 
-  try {
-    const authStore = useAuthStore()
-
-    if (!authStore.currentUser && localStorage.getItem('kids-learning-current-user')) {
-      await authStore.restoreSession()
-    }
-
-    clearTimeout(fallback)
-
-    if (to.meta.requiresAuth && !authStore.isLoggedIn) {
-      next({ name: 'login', query: { redirect: to.fullPath } })
-    } else if ((to.name === 'login' || to.name === 'register') && authStore.isLoggedIn) {
-      next('/')
-    } else {
-      next()
-    }
-  } catch (e) {
-    clearTimeout(fallback)
-    console.error('[Router guard] error:', e)
-    next()
+  // 需要登录但未登录
+  if (to.meta.requiresAuth && !authStore.currentUser && !saved) {
+    next({ name: 'login', query: { redirect: to.fullPath } })
+    return
   }
+
+  // 已登录但 currentUser 未恢复 → 异步恢复（不阻塞跳转）
+  if (!authStore.currentUser && saved) {
+    authStore.restoreSession().catch(() => {})
+  }
+
+  // 已登录状态下避免进入登录页
+  if ((to.name === 'login' || to.name === 'register') && authStore.currentUser) {
+    next('/')
+    return
+  }
+
+  next()
 })
 
 export default router

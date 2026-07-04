@@ -30,16 +30,17 @@ const userStore = useUserStore()
 const authStore = useAuthStore()
 const progressStore = useProgressStore()
 
-onMounted(async () => {
-  try {
-    await authStore.restoreSession()
-    userStore.loadFromLocalStorage()
-    userStore.initDailyTasks()
-    await progressStore.loadUserData()
-  } catch (e) {
+onMounted(() => {
+  // 并行初始化，不阻塞渲染
+  Promise.all([
+    authStore.restoreSession(),
+    progressStore.loadUserData(),
+  ]).catch(e => {
     window.__kidsErrors = window.__kidsErrors || []
     window.__kidsErrors.push({ msg: '[App mount] ' + (e instanceof Error ? e.message : String(e)) })
-  }
+  })
+  userStore.loadFromLocalStorage()
+  userStore.initDailyTasks()
 })
 </script>
 
