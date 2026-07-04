@@ -300,9 +300,7 @@ function draw() {
       </div>
     </div>
 
-    <div class="canvas-wrap"
-      @touchstart.prevent="handleTouchStart"
-      @touchend.prevent="handleTouchEnd">
+    <div class="canvas-wrap" @touchstart="handleTouchStart" @touchend="handleTouchEnd">
 
       <canvas id="snake-canvas"
         :width="CANVAS_SIZE"
