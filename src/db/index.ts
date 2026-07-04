@@ -108,69 +108,114 @@ function openDB(): Promise<IDBDatabase> {
   })
 }
 
-// 通用 CRUD 操作
-async function add<T>(storeName: string, data: T): Promise<T> {
+/** 安全的深拷贝 — 剥离 Vue proxy / 不可克隆内容 */
+function safeClone<T>(v: T): T {
+  if (v === null || v === undefined || typeof v !== 'object') return v
+  try {
+    return JSON.parse(JSON.stringify(v))
+  } catch {
+    // fallback: 手动拷贝普通字段
+    const obj: Record<string, unknown> = {}
+    const src = v as Record<string, unknown>
+    for (const k of Object.keys(src)) {
+      const val = src[k]
+      if (val === undefined) continue
+      if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+        obj[k] = safeClone(val)
+      } else if (Array.isArray(val)) {
+        obj[k] = val.map(item =>
+          typeof item === 'object' && item !== null ? safeClone(item) : item
+        )
+      } else {
+        obj[k] = val
+      }
+    }
+    return obj as T
+  }
+}
+
+async function writeToDB<T>(storeName: string, data: T, method: 'add' | 'put'): Promise<T> {
   const db = await openDB()
-  const clean = JSON.parse(JSON.stringify(data))
+  const clean = safeClone(data)
   return new Promise((resolve, reject) => {
+    // 超时保护：3 秒后拒绝，防止卡死
+    const timeout = setTimeout(() => {
+      reject(new Error('IDB ' + method + ' timeout: ' + storeName))
+    }, 3000)
     const tx = db.transaction(storeName, 'readwrite')
     const store = tx.objectStore(storeName)
-    const request = store.add(clean)
-    request.onsuccess = () => resolve(clean)
-    request.onerror = () => reject(request.error)
+    const request = store[method](clean)
+    request.onsuccess = () => {
+      clearTimeout(timeout)
+      resolve(clean)
+    }
+    request.onerror = () => {
+      clearTimeout(timeout)
+      reject(request.error)
+    }
   })
+}
+
+async function add<T>(storeName: string, data: T): Promise<T> {
+  return writeToDB(storeName, data, 'add')
 }
 
 async function put<T>(storeName: string, data: T): Promise<T> {
-  const db = await openDB()
-  // 深拷贝：剥离 Vue proxy / 不可克隆内容
-  const clean = JSON.parse(JSON.stringify(data))
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(storeName, 'readwrite')
-    const store = tx.objectStore(storeName)
-    const request = store.put(clean)
-    request.onsuccess = () => resolve(clean)
-    request.onerror = () => reject(request.error)
-  })
-}
-
-async function deepClone<T>(v: T): Promise<T> {
-  // JSON 安全的深拷贝
-  if (v === null || v === undefined || typeof v !== 'object') return v
-  return JSON.parse(JSON.stringify(v))
+  return writeToDB(storeName, data, 'put')
 }
 
 async function get<T>(storeName: string, key: string): Promise<T | undefined> {
   const db = await openDB()
   return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('IDB get timeout: ' + storeName)), 3000)
     const tx = db.transaction(storeName, 'readonly')
     const store = tx.objectStore(storeName)
     const request = store.get(key)
-    request.onsuccess = () => resolve(deepClone(request.result) as T | undefined)
-    request.onerror = () => reject(request.error)
+    request.onsuccess = () => {
+      clearTimeout(timeout)
+      resolve(safeClone(request.result) as T | undefined)
+    }
+    request.onerror = () => {
+      clearTimeout(timeout)
+      reject(request.error)
+    }
   })
 }
 
 async function getAll<T>(storeName: string): Promise<T[]> {
   const db = await openDB()
   return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('IDB getAll timeout: ' + storeName)), 3000)
     const tx = db.transaction(storeName, 'readonly')
     const store = tx.objectStore(storeName)
     const request = store.getAll()
-    request.onsuccess = () => resolve(deepClone(request.result) as T[])
-    request.onerror = () => reject(request.error)
+    request.onsuccess = () => {
+      clearTimeout(timeout)
+      resolve(safeClone(request.result) as T[])
+    }
+    request.onerror = () => {
+      clearTimeout(timeout)
+      reject(request.error)
+    }
   })
 }
 
 async function getByIndex<T>(storeName: string, indexName: string, key: string | string[]): Promise<T[]> {
   const db = await openDB()
   return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('IDB getByIndex timeout: ' + storeName)), 3000)
     const tx = db.transaction(storeName, 'readonly')
     const store = tx.objectStore(storeName)
     const index = store.index(indexName)
     const request = index.getAll(key)
-    request.onsuccess = () => resolve(deepClone(request.result) as T[])
-    request.onerror = () => reject(request.error)
+    request.onsuccess = () => {
+      clearTimeout(timeout)
+      resolve(safeClone(request.result) as T[])
+    }
+    request.onerror = () => {
+      clearTimeout(timeout)
+      reject(request.error)
+    }
   })
 }
 

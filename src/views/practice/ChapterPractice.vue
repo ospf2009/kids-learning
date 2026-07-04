@@ -60,21 +60,25 @@ async function selectAnswer(answer: string) {
     speakWrong()
   }
 
-  // 记录错题到 IndexedDB
+  // 记录错题到 IndexedDB (出错不阻塞答题流程)
   if (authStore.currentUser && currentQuestion.value) {
-    const q = currentQuestion.value
-    await progressStore.recordAnswer(
-      authStore.currentUser.id,
-      subject.value,
-      userGrade.value,
-      chapterId,
-      q.id,
-      q.question,
-      answer,
-      q.answer,
-      q.options || [],
-      isCorrect.value
-    )
+    try {
+      const q = currentQuestion.value
+      await progressStore.recordAnswer(
+        authStore.currentUser.id,
+        subject.value,
+        userGrade.value,
+        chapterId,
+        q.id,
+        q.question,
+        answer,
+        q.answer,
+        q.options || [],
+        isCorrect.value
+      )
+    } catch (e) {
+      console.error('[ChapterPractice] recordAnswer error:', e)
+    }
   }
 }
 

@@ -2,11 +2,14 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useProgressStore } from '@/stores/progress'
 import { getChapters, type GradeId, type Subject } from '@/data/chapters'
 import { playVictorySound, playCorrectSound, playWrongSound } from '@/utils/sound'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const progressStore = useProgressStore()
+const userGrade = computed(() => (authStore.grade || 'grade1-down') as GradeId)
 
 const questions = ref<any[]>([])
 const currentIndex = ref(0)
@@ -107,13 +110,30 @@ const progress = computed(() => {
 function selectAnswer(answer: string) {
   if (showResult.value) return
   selectedAnswer.value = answer
-  isCorrect.value = answer === currentQuestion.value?.answer
+  const q = currentQuestion.value
+  isCorrect.value = answer === q?.answer
   showResult.value = true
   if (isCorrect.value) {
     correctCount.value++
     playCorrectSound()
   } else {
     playWrongSound()
+  }
+
+  // 记录答题数据（不阻塞流程）
+  if (authStore.currentUser && q) {
+    progressStore.recordAnswer(
+      authStore.currentUser.id,
+      q.subject || 'chinese',
+      userGrade.value,
+      'daily-challenge',
+      q.id,
+      q.question,
+      answer,
+      q.answer,
+      q.options || [],
+      isCorrect.value
+    ).catch(e => console.error('[DailyChallenge] recordAnswer:', e))
   }
 }
 
