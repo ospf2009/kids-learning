@@ -111,24 +111,33 @@ function openDB(): Promise<IDBDatabase> {
 // 通用 CRUD 操作
 async function add<T>(storeName: string, data: T): Promise<T> {
   const db = await openDB()
+  const clean = JSON.parse(JSON.stringify(data))
   return new Promise((resolve, reject) => {
     const tx = db.transaction(storeName, 'readwrite')
     const store = tx.objectStore(storeName)
-    const request = store.add(data)
-    request.onsuccess = () => resolve(data)
+    const request = store.add(clean)
+    request.onsuccess = () => resolve(clean)
     request.onerror = () => reject(request.error)
   })
 }
 
 async function put<T>(storeName: string, data: T): Promise<T> {
   const db = await openDB()
+  // 深拷贝：剥离 Vue proxy / 不可克隆内容
+  const clean = JSON.parse(JSON.stringify(data))
   return new Promise((resolve, reject) => {
     const tx = db.transaction(storeName, 'readwrite')
     const store = tx.objectStore(storeName)
-    const request = store.put(data)
-    request.onsuccess = () => resolve(data)
+    const request = store.put(clean)
+    request.onsuccess = () => resolve(clean)
     request.onerror = () => reject(request.error)
   })
+}
+
+async function deepClone<T>(v: T): Promise<T> {
+  // JSON 安全的深拷贝
+  if (v === null || v === undefined || typeof v !== 'object') return v
+  return JSON.parse(JSON.stringify(v))
 }
 
 async function get<T>(storeName: string, key: string): Promise<T | undefined> {
@@ -137,7 +146,7 @@ async function get<T>(storeName: string, key: string): Promise<T | undefined> {
     const tx = db.transaction(storeName, 'readonly')
     const store = tx.objectStore(storeName)
     const request = store.get(key)
-    request.onsuccess = () => resolve(request.result as T | undefined)
+    request.onsuccess = () => resolve(deepClone(request.result) as T | undefined)
     request.onerror = () => reject(request.error)
   })
 }
@@ -148,7 +157,7 @@ async function getAll<T>(storeName: string): Promise<T[]> {
     const tx = db.transaction(storeName, 'readonly')
     const store = tx.objectStore(storeName)
     const request = store.getAll()
-    request.onsuccess = () => resolve(request.result as T[])
+    request.onsuccess = () => resolve(deepClone(request.result) as T[])
     request.onerror = () => reject(request.error)
   })
 }
@@ -160,7 +169,7 @@ async function getByIndex<T>(storeName: string, indexName: string, key: string |
     const store = tx.objectStore(storeName)
     const index = store.index(indexName)
     const request = index.getAll(key)
-    request.onsuccess = () => resolve(request.result as T[])
+    request.onsuccess = () => resolve(deepClone(request.result) as T[])
     request.onerror = () => reject(request.error)
   })
 }

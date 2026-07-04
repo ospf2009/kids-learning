@@ -87,53 +87,60 @@ export const useProgressStore = defineStore('progress', () => {
     options: string[],
     isCorrect: boolean
   ) {
-    // 如果是错误答案，记录错题
-    if (!isCorrect) {
-      const wrong: DBWrongQuestion = {
-        id: generateId(),
-        userId,
-        questionId,
-        chapterId,
-        subject,
-        gradeId,
-        question,
-        userAnswer,
-        correctAnswer,
-        options,
-        date: new Date().toISOString(),
-        retried: false,
-        retryCorrect: false,
+    try {
+      // 如果是错误答案，记录错题
+      if (!isCorrect) {
+        const wrong: DBWrongQuestion = {
+          id: generateId(),
+          userId,
+          questionId,
+          chapterId,
+          subject,
+          gradeId,
+          question,
+          userAnswer,
+          correctAnswer,
+          options,
+          date: new Date().toISOString(),
+          retried: false,
+          retryCorrect: false,
+        }
+        await wrongDB.add(wrong)
+        wrongQuestions.value.push(JSON.parse(JSON.stringify(wrong)))
       }
-      await wrongDB.add(wrong)
-      wrongQuestions.value.push(wrong)
-    }
 
-    // 更新进度
-    let progress = await progressDB.getByUserChapter(userId, chapterId)
-    if (!progress) {
-      progress = {
-        id: generateId(),
-        userId,
-        chapterId,
-        subject,
-        gradeId,
-        completed: false,
-        score: isCorrect ? 1 : 0,
-        totalQuestions: 1,
-        correctAnswers: isCorrect ? 1 : 0,
-        attempts: 1,
-        lastAttemptDate: new Date().toISOString(),
+      // 更新进度 — 所有数据深拷贝后操作，避免 Proxy 污染 IDB
+      let progress = await progressDB.getByUserChapter(userId, chapterId)
+      if (!progress) {
+        const p: DBProgress = {
+          id: generateId(),
+          userId,
+          chapterId,
+          subject,
+          gradeId,
+          completed: false,
+          score: isCorrect ? 1 : 0,
+          totalQuestions: 1,
+          correctAnswers: isCorrect ? 1 : 0,
+          attempts: 1,
+          lastAttemptDate: new Date().toISOString(),
+        }
+        await progressDB.add(p)
+        progressMap.value.set(chapterId, p)
+      } else {
+        // 深拷贝后再修改
+        const p = JSON.parse(JSON.stringify(progress))
+        p.totalQuestions += 1
+        p.correctAnswers += isCorrect ? 1 : 0
+        p.score = p.correctAnswers
+        p.attempts += 1
+        p.lastAttemptDate = new Date().toISOString()
+        await progressDB.put(p)
+        progressMap.value.set(chapterId, p)
       }
-      await progressDB.add(progress)
-    } else {
-      progress.totalQuestions += 1
-      progress.correctAnswers += isCorrect ? 1 : 0
-      progress.score = progress.correctAnswers
-      progress.attempts += 1
-      progress.lastAttemptDate = new Date().toISOString()
-      await progressDB.put(progress)
+    } catch (e) {
+      console.error('[progress] recordAnswer error:', e)
     }
-    progressMap.value.set(chapterId, progress)
   }
 
   return {

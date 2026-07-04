@@ -24,10 +24,14 @@ export const useAuthStore = defineStore('auth', () => {
       try {
         const user = await userDB.get(savedUserId)
         if (user) {
-          currentUser.value = user
+          // 深拷贝以剥离 IDB 返回的引用，防止 Vue proxy 污染
+          currentUser.value = JSON.parse(JSON.stringify(user))
+        } else {
+          // 用户数据已删除，清除 localStorage
+          localStorage.removeItem('kids-learning-current-user')
         }
       } catch (e) {
-        console.error('Failed to restore session:', e)
+        console.error('[auth] restoreSession failed:', e)
         localStorage.removeItem('kids-learning-current-user')
       }
     }
@@ -110,14 +114,25 @@ export const useAuthStore = defineStore('auth', () => {
   async function updateGrade(newGrade: string) {
     if (!currentUser.value) return
     currentUser.value.grade = newGrade
-    await userDB.put(currentUser.value)
+    try {
+      const clone = JSON.parse(JSON.stringify(currentUser.value))
+      await userDB.put(clone)
+      localStorage.setItem('kids-learning-current-user', currentUser.value.id)
+    } catch (e) {
+      console.error('[auth] updateGrade failed:', e)
+    }
   }
 
   // 更新头像
   async function updateAvatar(newAvatar: string) {
     if (!currentUser.value) return
     currentUser.value.avatar = newAvatar
-    await userDB.put(currentUser.value)
+    try {
+      const clone = JSON.parse(JSON.stringify(currentUser.value))
+      await userDB.put(clone)
+    } catch (e) {
+      console.error('[auth] updateAvatar failed:', e)
+    }
   }
 
   // 清除错误

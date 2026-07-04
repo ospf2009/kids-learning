@@ -82,14 +82,22 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach(async (to, from, next) => {
+  let guardTimer: ReturnType<typeof setTimeout> | null = null
+  
+  // 安全超时：3秒后强制放行，防止卡死
+  const fallback = setTimeout(() => {
+    console.warn('[Router guard] timeout, force next()')
+    next()
+  }, 3000)
+
   try {
-    // 确保 Pinia 已激活
     const authStore = useAuthStore()
 
-    // 如果还没有恢复会话，先恢复
     if (!authStore.currentUser && localStorage.getItem('kids-learning-current-user')) {
       await authStore.restoreSession()
     }
+
+    clearTimeout(fallback)
 
     if (to.meta.requiresAuth && !authStore.isLoggedIn) {
       next({ name: 'login', query: { redirect: to.fullPath } })
@@ -99,10 +107,9 @@ router.beforeEach(async (to, from, next) => {
       next()
     }
   } catch (e) {
-    window.__kidsErrors = window.__kidsErrors || []
-    const msg = e instanceof Error ? e.message : String(e)
-    window.__kidsErrors.push({ msg: '[Router guard] ' + msg })
-    next()  // 出错时放行
+    clearTimeout(fallback)
+    console.error('[Router guard] error:', e)
+    next()
   }
 })
 
