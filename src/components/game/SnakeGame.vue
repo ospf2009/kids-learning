@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 
-const GRID_SIZE = 13
+const GRID_SIZE = 15
 const CELL_SIZE = 20
 const CANVAS_SIZE = GRID_SIZE * CELL_SIZE
 type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'
 interface Point { x: number; y: number }
 
-const snake = ref<Point[]>([{ x: 6, y: 7 }])
+const snake = ref<Point[]>([{ x: 7, y: 7 }, { x: 6, y: 7 }, { x: 5, y: 7 }])
 const food = ref<Point>({ x: 8, y: 7 })
 const direction = ref<Direction>('RIGHT')
 const nextDirection = ref<Direction>('RIGHT')
@@ -16,7 +16,7 @@ const highScore = ref(0)
 const isGameOver = ref(false)
 const isPaused = ref(false)
 const isPlaying = ref(false)
-const gameSpeed = ref(180)
+const gameSpeed = ref(350)
 
 let gameLoop: ReturnType<typeof setInterval> | null = null
 let ctx: CanvasRenderingContext2D | null = null
@@ -61,11 +61,11 @@ function spawnFood() {
 }
 
 function start() {
-  snake.value = [{ x: 6, y: 7 }, { x: 5, y: 7 }]
+  snake.value = [{ x: 7, y: 7 }, { x: 6, y: 7 }, { x: 5, y: 7 }]  // 初始长度 3 节
   direction.value = 'RIGHT'
   nextDirection.value = 'RIGHT'
   score.value = 0
-  gameSpeed.value = 180
+  gameSpeed.value = 350
   isGameOver.value = false
   isPaused.value = false
   isPlaying.value = true
@@ -112,8 +112,8 @@ function tick() {
 
   if (newHead.x === food.value.x && newHead.y === food.value.y) {
     score.value += 10
-    if (gameSpeed.value > 80 && score.value % 50 === 0) {
-      gameSpeed.value = Math.max(80, gameSpeed.value - 15)
+    if (gameSpeed.value > 120 && score.value % 30 === 0) {
+      gameSpeed.value = Math.max(120, gameSpeed.value - 20)
       restartLoop()
     }
     spawnFood()
@@ -392,8 +392,9 @@ function draw() {
 }
 .snake-canvas {
   display: block;
-  width: 260px;
-  height: 260px;
+  width: 100%;
+  max-width: 340px;
+  image-rendering: auto;
 }
 
 .overlay {
