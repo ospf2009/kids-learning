@@ -301,8 +301,8 @@ function draw() {
     </div>
 
     <div class="canvas-wrap"
-      @touchstart.passive="handleTouchStart"
-      @touchend.passive="handleTouchEnd">
+      @touchstart.prevent="handleTouchStart"
+      @touchend.prevent="handleTouchEnd">
 
       <canvas id="snake-canvas"
         :width="CANVAS_SIZE"
@@ -389,6 +389,7 @@ function draw() {
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   border: 2px solid #D1D5DB;
+  touch-action: none;
 }
 .snake-canvas {
   display: block;
