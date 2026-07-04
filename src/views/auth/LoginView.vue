@@ -18,7 +18,6 @@ async function handleLogin() {
     errorMsg.value = '请输入用户名和密码'
     return
   }
-
   loading.value = true
   try {
     const ok = await authStore.login(username.value.trim(), password.value)
@@ -26,9 +25,9 @@ async function handleLogin() {
       const redirect = (route.query.redirect as string) || '/'
       router.push(redirect)
     } else {
-      errorMsg.value = authStore.error || '登录失败'
+      errorMsg.value = authStore.error || '账号或密码错误'
     }
-  } catch (e) {
+  } catch {
     errorMsg.value = '登录失败，请重试'
   } finally {
     loading.value = false
@@ -39,48 +38,79 @@ async function handleLogin() {
 <template>
   <div class="auth-page">
     <div class="auth-card">
-      <div class="logo">⭐</div>
-      <h1>学习乐园</h1>
-      <p class="subtitle">👋 欢迎回来！</p>
+      <div class="auth-emoji">&#x2B50;</div>
+      <h1 class="auth-title">欢迎回来</h1>
+      <p class="auth-sub">登录继续学习</p>
 
-      <form @submit.prevent="handleLogin">
+      <form @submit.prevent="handleLogin" class="auth-form">
         <div class="field">
-          <label>👤 用户名</label>
-          <input v-model="username" type="text" placeholder="输入用户名" maxlength="20" />
+          <label>用户名</label>
+          <input v-model="username" type="text" placeholder="请输入用户名" maxlength="20" />
         </div>
         <div class="field">
-          <label>🔒 密码</label>
-          <input v-model="password" type="password" placeholder="输入密码" maxlength="32" />
+          <label>密码</label>
+          <input v-model="password" type="password" placeholder="请输入密码" maxlength="32" />
         </div>
 
-        <div class="error" v-if="errorMsg">{{ errorMsg }}</div>
+        <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
 
-        <button type="submit" class="submit-btn" :disabled="loading">
-          {{ loading ? '登录中...' : '[R] 登录' }}
+        <button type="submit" class="btn btn-primary auth-btn" :disabled="loading">
+          {{ loading ? '登录中…' : '登录' }}
         </button>
       </form>
 
-      <div class="switch-link">
-        还没有账号？<router-link to="/register">去注册</router-link>
-      </div>
+      <p class="switch-link">
+        还没有账号？
+        <router-link to="/register" class="link">注册</router-link>
+      </p>
     </div>
   </div>
 </template>
 
 <style scoped>
-.auth-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 16px; }
-.auth-card { background: white; border-radius: 24px; padding: 32px; max-width: 400px; width: 100%; box-shadow: 0 8px 32px rgba(0,0,0,0.1); text-align: center; }
-.logo { font-size: 64px; margin-bottom: 8px; }
-h1 { font-size: 28px; color: #333; margin-bottom: 4px; }
-.subtitle { color: #888; margin-bottom: 24px; }
-.field { text-align: left; margin-bottom: 16px; }
-.field label { display: block; font-size: 14px; font-weight: 600; color: #555; margin-bottom: 6px; }
-.field input { width: 100%; padding: 12px 16px; border: 2px solid #EEE; border-radius: 12px; font-size: 16px; font-family: inherit; transition: border-color 0.2s; box-sizing: border-box; }
-.field input:focus { outline: none; border-color: var(--color-primary); }
-.error { color: #FF6B6B; font-size: 14px; margin-bottom: 16px; }
-.submit-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--color-primary), #FF8E8E); color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: 700; cursor: pointer; transition: transform 0.2s; }
-.submit-btn:hover:not(:disabled) { transform: scale(1.02); }
-.submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.switch-link { margin-top: 20px; font-size: 14px; color: #888; }
-.switch-link a { color: var(--color-primary); text-decoration: none; font-weight: 600; }
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--space-4);
+}
+.auth-card {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8) var(--space-6);
+  max-width: 380px;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+  animation: fadeInUp 0.3s ease;
+}
+.auth-emoji { font-size: 48px; margin-bottom: var(--space-3); }
+.auth-title { font-size: var(--font-size-xl); font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+.auth-sub { font-size: var(--font-size-sm); color: var(--text-tertiary); margin-bottom: var(--space-6); }
+.auth-form { text-align: left; }
+.field { margin-bottom: var(--space-4); }
+.field label { display: block; font-size: var(--font-size-sm); font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+.field input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-family: inherit;
+  background: var(--bg-input);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+.field input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(232,99,99,0.1);
+  background: white;
+}
+.error-msg { color: var(--color-danger); font-size: var(--font-size-sm); margin-bottom: var(--space-3); }
+.auth-btn { width: 100%; padding: 12px; font-size: var(--font-size-md); margin-top: var(--space-2); }
+.switch-link { margin-top: var(--space-5); font-size: var(--font-size-sm); color: var(--text-tertiary); }
+.link { color: var(--color-primary); font-weight: 600; text-decoration: none; }
+.link:hover { text-decoration: underline; }
 </style>

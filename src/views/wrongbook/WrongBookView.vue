@@ -6,7 +6,6 @@ import { wrongDB, type DBWrongQuestion } from '@/db'
 
 const router = useRouter()
 const authStore = useAuthStore()
-
 const wrongQuestions = ref<DBWrongQuestion[]>([])
 
 onMounted(async () => {
@@ -16,81 +15,108 @@ onMounted(async () => {
 })
 
 function goBack() { router.push('/') }
-
 async function removeWrong(id: string) {
   await wrongDB.remove(id)
   wrongQuestions.value = wrongQuestions.value.filter(w => w.id !== id)
 }
-
-function retryQuestion(q: DBWrongQuestion) {
-  router.push(`/practice/${q.subject}/${q.chapterId}`)
-}
-
+function retryQuestion(q: DBWrongQuestion) { router.push(`/practice/${q.subject}/${q.chapterId}`) }
 async function clearAll() {
   if (wrongQuestions.value.length === 0) return
   await wrongDB.clear()
   wrongQuestions.value = []
 }
-
-function getSubjectName(subject: string): string {
-  const names: Record<string, string> = { chinese: '语文', math: '数学', english: '英语' }
-  return names[subject] || subject
-}
+const subjectNames: Record<string, string> = { chinese: '语文', math: '数学', english: '英语' }
 </script>
 
 <template>
-  <div class="wrong-page">
-    <header class="page-header">
-      <button class="back-btn" @click="goBack">← 返回</button>
-      <h1>📋 错题本</h1>
+  <div class="page">
+    <div class="page-header">
+      <button class="back-btn" @click="goBack">&larr; 返回</button>
+      <h1>错题本</h1>
       <button v-if="wrongQuestions.length > 0" class="clear-btn" @click="clearAll">清空</button>
-    </header>
+    </div>
 
     <div v-if="wrongQuestions.length === 0" class="empty">
-      <div class="empty-icon">:)</div>
-      <p>🎉 太棒了，没有错题！</p>
+      <div class="empty-icon">&#x1F389;</div>
+      <p>太棒了，没有错题！</p>
     </div>
 
     <div class="wrong-list">
       <div v-for="q in wrongQuestions" :key="q.id" class="wrong-card">
-        <div class="wrong-header">
-          <span class="wrong-subject">{{ getSubjectName(q.subject) }}</span>
-          <span class="wrong-date">{{ new Date(q.date).toLocaleDateString('zh-CN') }}</span>
-          <button class="remove-btn" @click="removeWrong(q.id)">🗑</button>
+        <div class="wrong-top">
+          <span class="ws-badge" :class="'ws-' + q.subject">{{ subjectNames[q.subject] || q.subject }}</span>
+          <span class="ws-date">{{ new Date(q.date).toLocaleDateString('zh-CN') }}</span>
+          <button class="ws-remove" @click="removeWrong(q.id)">&times;</button>
         </div>
-        <div class="wrong-question">{{ q.question }}</div>
-        <div class="wrong-answers">
-          <div class="your-answer">你的答案：<span class="wrong">{{ q.userAnswer }}</span></div>
-          <div class="correct-answer">正确答案：<span class="correct">{{ q.correctAnswer }}</span></div>
+        <p class="ws-question">{{ q.question }}</p>
+        <div class="ws-answers">
+          <span class="ws-yours">你的答案 <span class="ws-wrong">{{ q.userAnswer }}</span></span>
+          <span class="ws-correct">正确答案 <span class="ws-right">{{ q.correctAnswer }}</span></span>
         </div>
-        <button class="retry-btn" @click="retryQuestion(q)">去复习 -></button>
+        <button class="ws-retry" @click="retryQuestion(q)">去复习 &rarr;</button>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.wrong-page { padding-bottom: 32px; }
-.page-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-.back-btn { background: white; border: 2px solid #EEE; border-radius: 20px; padding: 8px 16px; font-size: 14px; cursor: pointer; font-family: inherit; }
-.back-btn:hover { border-color: var(--color-primary); }
-h1 { font-size: 20px; flex: 1; }
-.clear-btn { background: #FFF0F0; border: none; color: #FF6B6B; padding: 6px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: inherit; }
+.page { padding-bottom: var(--space-8); animation: fadeInUp 0.3s ease; }
+.page-header h1 { font-size: var(--font-size-lg); }
+.clear-btn {
+  background: transparent;
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger);
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.clear-btn:hover { background: #FEF2F2; }
 
-.empty { text-align: center; padding: 48px 0; }
-.empty-icon { font-size: 64px; margin-bottom: 12px; }
-.empty p { font-size: 18px; color: #888; }
+.empty { text-align: center; padding: var(--space-12) 0; }
+.empty-icon { font-size: 56px; margin-bottom: var(--space-3); }
+.empty p { font-size: var(--font-size-md); color: var(--text-secondary); }
 
-.wrong-list { display: flex; flex-direction: column; gap: 12px; }
-.wrong-card { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-.wrong-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.wrong-subject { font-size: 12px; background: #FFF0F0; color: #FF6B6B; padding: 2px 8px; border-radius: 8px; }
-.wrong-date { font-size: 11px; color: #CCC; flex: 1; margin-left: 8px; }
-.remove-btn { background: none; border: none; font-size: 16px; color: #CCC; cursor: pointer; }
-.remove-btn:hover { color: #FF6B6B; }
-.wrong-question { font-size: 16px; font-weight: 600; color: #333; margin-bottom: 8px; }
-.wrong-answers { display: flex; gap: 16px; margin-bottom: 12px; font-size: 14px; }
-.your-answer .wrong { color: #FF6B6B; text-decoration: line-through; }
-.correct-answer .correct { color: #4ECDC4; font-weight: 700; }
-.retry-btn { background: linear-gradient(135deg, var(--color-primary), #FF8E8E); color: white; border: none; border-radius: 10px; padding: 8px 16px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.wrong-list { display: flex; flex-direction: column; gap: 10px; }
+.wrong-card {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+.wrong-top { display: flex; align-items: center; gap: 8px; margin-bottom: var(--space-3); }
+.ws-badge {
+  font-size: var(--font-size-xs);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+}
+.ws-chinese { background: var(--color-chinese-bg); color: var(--color-chinese); }
+.ws-math { background: var(--color-math-bg); color: var(--color-math); }
+.ws-english { background: var(--color-english-bg); color: var(--color-english); }
+.ws-date { font-size: var(--font-size-xs); color: var(--text-tertiary); flex: 1; }
+.ws-remove { background: none; border: none; font-size: 18px; color: var(--text-tertiary); cursor: pointer; line-height: 1; padding: 0; }
+.ws-remove:hover { color: var(--color-danger); }
+
+.ws-question { font-size: var(--font-size-md); font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-3); }
+.ws-answers { display: flex; gap: var(--space-4); font-size: var(--font-size-sm); margin-bottom: var(--space-3); }
+.ws-yours, .ws-correct { display: flex; align-items: center; gap: 4px; }
+.ws-wrong { color: var(--color-danger); text-decoration: line-through; font-weight: 600; }
+.ws-right { color: var(--color-success); font-weight: 700; }
+
+.ws-retry {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.ws-retry:hover { background: var(--color-primary-light); box-shadow: var(--shadow-primary); }
 </style>

@@ -9,101 +9,139 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
-// 从路由参数获取科目
 const subject = computed<Subject>(() => {
   const s = route.params.subject as string
   if (['chinese', 'math', 'english'].includes(s)) return s as Subject
   return 'chinese'
 })
 
-const subjectNames: Record<Subject, string> = { chinese: '语文', math: '数学', english: '英语' }
-const subjectIcons: Record<Subject, string> = { chinese: '📖', math: '🔢', english: '🔤' }
-const subjectColors: Record<Subject, string> = { chinese: '#FF6B6B', math: '#4ECDC4', english: '#60A5FA' }
-const subjectEmojis: Record<Subject, string> = { chinese: '📖', math: '🔢', english: '🔤' }
+const subjectMeta: Record<Subject, { name: string; icon: string; color: string; bg: string; desc: string }> = {
+  chinese: { name: '语文', icon: '书', color: 'var(--color-chinese)', bg: 'var(--color-chinese-bg)', desc: '字词句段，循序渐进' },
+  math: { name: '数学', icon: '数', color: 'var(--color-math)', bg: 'var(--color-math-bg)', desc: '数与运算，寓教于乐' },
+  english: { name: '英语', icon: '英', color: 'var(--color-english)', bg: 'var(--color-english-bg)', desc: '字母单词，轻松入门' },
+}
 
+const meta = computed(() => subjectMeta[subject.value])
 const userGrade = computed<GradeId>(() => (authStore.grade || 'grade1-down') as GradeId)
 const chapters = computed(() => getChapters(userGrade.value, subject.value))
 
-function goChapter(chapterId: string) {
-  router.push(`/practice/${subject.value}/${chapterId}`)
-}
-
+function goChapter(chapterId: string) { router.push(`/practice/${subject.value}/${chapterId}`) }
 function goBack() { router.push('/') }
 </script>
 
 <template>
-  <div class="subject-page">
-    <header class="page-header" :style="{ '--s-color': subjectColors[subject] }">
-      <button class="back-btn" @click="goBack">← 返回</button>
+  <div class="page">
+    <div class="page-header">
+      <button class="back-btn" @click="goBack">&larr; 返回</button>
+      <h1>{{ meta.icon }} {{ meta.name }}</h1>
+      <span class="grade-badge">{{ getGradeName(userGrade) }}</span>
+    </div>
+
+    <!-- 科目简介 -->
+    <div class="subject-hero" :style="{ background: meta.bg }">
+      <div class="hero-icon" :style="{ color: meta.color }">{{ meta.icon }}</div>
       <div>
-        <h1>{{ subjectIcons[subject] }} {{ subjectNames[subject] }}</h1>
-        <p class="grade-label">{{ getGradeName(userGrade) }}</p>
-      </div>
-    </header>
-
-    <div class="subject-hero" :style="{ background: `linear-gradient(135deg, ${subjectColors[subject]}22, ${subjectColors[subject]}11)` }">
-      <div class="hero-emoji">{{ subjectEmojis[subject] }}</div>
-      <div class="hero-text">
-        <div class="hero-title">{{ subjectNames[subject] }}练习</div>
-        <div class="hero-desc">{{ subjectNames[subject] === '语文' ? '字词句段，循序渐进' : subjectNames[subject] === '数学' ? '数与运算，寓教于乐' : '字母单词，轻松入门' }}</div>
+        <div class="hero-title">{{ meta.name }}练习</div>
+        <div class="hero-desc">{{ meta.desc }}</div>
       </div>
     </div>
 
-    <div class="chapters-list">
-      <div
-        v-for="ch in chapters"
-        :key="ch.id"
-        class="chapter-card"
-        :style="{ '--s-color': subjectColors[subject] }"
-        @click="goChapter(ch.id)"
-      >
-        <div class="ch-icon">{{ ch.icon }}</div>
-        <div class="ch-info">
-          <div class="ch-title">{{ ch.title }}</div>
-          <div class="ch-desc">{{ ch.description }}</div>
-          <div class="ch-meta">
-            <span class="ch-count">{{ ch.questions.length }}道题</span>
-          </div>
+    <!-- 章节列表 -->
+    <div class="chapter-list" v-if="chapters.length > 0">
+      <div v-for="ch in chapters" :key="ch.id" class="chapter-card" @click="goChapter(ch.id)">
+        <div class="cc-icon" :style="{ background: meta.bg, color: meta.color }">{{ ch.icon }}</div>
+        <div class="cc-body">
+          <div class="cc-title">{{ ch.title }}</div>
+          <div class="cc-desc">{{ ch.description }}</div>
+          <div class="cc-count">{{ ch.questions.length }} 题</div>
         </div>
-        <div class="ch-arrow">-></div>
+        <div class="cc-arrow">&rarr;</div>
       </div>
     </div>
 
-    <div class="empty" v-if="chapters.length === 0">
-      <div class="empty-icon">📭</div>
-      <p>该年级暂无{{ subjectNames[subject] }}题库</p>
-      <p class="empty-hint">切换到其他年级看看</p>
+    <div v-else class="empty">
+      <div class="empty-icon">&#x1F4ED;</div>
+      <p>该年级暂无{{ meta.name }}题库</p>
+      <p class="empty-hint">可切换到其他年级</p>
     </div>
   </div>
 </template>
 
 <style scoped>
-.subject-page { padding-bottom: 32px; }
-.page-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.back-btn { background: white; border: 2px solid #EEE; border-radius: 20px; padding: 8px 16px; font-size: 14px; cursor: pointer; font-family: inherit; }
-.back-btn:hover { border-color: var(--s-color); }
-h1 { font-size: 22px; color: var(--s-color); margin: 0; }
-.grade-label { font-size: 12px; color: #888; margin-top: 2px; }
+.page { padding-bottom: var(--space-8); animation: fadeInUp 0.3s ease; }
+.page-header h1 { font-size: var(--font-size-lg); display: flex; align-items: center; gap: 6px; }
+.grade-badge {
+  font-size: var(--font-size-xs);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
 
-.subject-hero { display: flex; align-items: center; gap: 16px; border-radius: 20px; padding: 20px; margin-bottom: 20px; }
-.hero-emoji { font-size: 48px; }
-.hero-title { font-size: 20px; font-weight: 700; color: #333; margin-bottom: 4px; }
-.hero-desc { font-size: 14px; color: #666; }
+/* 科目简介 */
+.subject-hero {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+  border: 1px solid var(--border-color);
+}
+.hero-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+.hero-title { font-size: var(--font-size-md); font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+.hero-desc { font-size: var(--font-size-sm); color: var(--text-secondary); }
 
-.chapters-list { display: flex; flex-direction: column; gap: 12px; }
-.chapter-card { display: flex; align-items: center; gap: 12px; background: white; border-radius: 16px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
-.chapter-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.1); border-color: var(--s-color); }
-.ch-icon { font-size: 32px; width: 48px; text-align: center; }
-.ch-info { flex: 1; }
-.ch-title { font-size: 16px; font-weight: 700; color: #333; margin-bottom: 2px; }
-.ch-desc { font-size: 13px; color: #888; margin-bottom: 6px; }
-.ch-meta { display: flex; align-items: center; gap: 8px; }
-.ch-count { font-size: 12px; color: #AAA; background: #F5F5F5; padding: 2px 8px; border-radius: 8px; }
-.ch-arrow { font-size: 16px; color: #CCC; transition: transform 0.2s; }
-.chapter-card:hover .ch-arrow { transform: translateX(4px); color: var(--s-color); }
+/* 章节列表 */
+.chapter-list { display: flex; flex-direction: column; gap: 10px; }
+.chapter-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.chapter-card:hover {
+  border-color: #D1D5DB;
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-2px);
+}
+.cc-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.cc-body { flex: 1; min-width: 0; }
+.cc-title { font-size: var(--font-size-md); font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+.cc-desc { font-size: var(--font-size-xs); color: var(--text-tertiary); margin-bottom: 4px; }
+.cc-count { font-size: var(--font-size-xs); color: var(--text-tertiary); }
+.cc-arrow { font-size: 16px; color: var(--text-tertiary); transition: transform 0.2s; }
+.chapter-card:hover .cc-arrow { transform: translateX(4px); color: var(--text-primary); }
 
-.empty { text-align: center; padding: 48px 0; }
-.empty-icon { font-size: 48px; margin-bottom: 12px; }
-.empty p { color: #888; }
-.empty-hint { font-size: 13px; color: #AAA; margin-top: 8px; }
+.empty { text-align: center; padding: var(--space-12) 0; }
+.empty-icon { font-size: 48px; margin-bottom: var(--space-3); }
+.empty p { color: var(--text-secondary); }
+.empty-hint { font-size: var(--font-size-sm); color: var(--text-tertiary); margin-top: var(--space-2); }
 </style>

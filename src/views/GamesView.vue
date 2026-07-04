@@ -8,60 +8,70 @@ const currentGame = ref<string | null>(null)
 
 function goBack() { router.push('/') }
 function playGame(game: string) { currentGame.value = game }
-function handleComplete(score: number) {
-  // 游戏结束回调
-}
+function handleComplete(score: number) {}
 
 const games = [
-  { id: 'catch-stars', name: '接星星', icon: '*', desc: '接住星星避开炸弹', color: '#FF6B6B' },
-  { id: 'coming-soon', name: '贪吃蛇', icon: '[S]', desc: '即将推出', color: '#4ECDC4' },
-  { id: 'coming-soon-2', name: '打地鼠', icon: '[H]', desc: '即将推出', color: '#60A5FA' },
+  { id: 'catch-stars', name: '接星星', icon: '*', desc: '接住星星避开炸弹', color: '#E86363', bg: '#FFF5F5' },
+  { id: 'coming-soon', name: '贪吃蛇', icon: 'S', desc: '即将推出', color: '#3BA99E', bg: '#F0FDF9' },
+  { id: 'coming-soon-2', name: '打地鼠', icon: 'H', desc: '即将推出', color: '#3B82F6', bg: '#EFF6FF' },
 ]
 </script>
 
 <template>
-  <div class="games-view">
-    <header class="page-header">
-      <button class="back-btn" @click="goBack">← 返回</button>
-      <h1>🎮 游戏中心</h1>
-    </header>
+  <div class="page">
+    <div class="page-header">
+      <button class="back-btn" @click="goBack">&larr; 返回</button>
+      <h1>游戏中心</h1>
+    </div>
 
-    <!-- 游戏列表 -->
-    <div class="games-grid" v-if="!currentGame">
-      <div
-        v-for="game in games"
-        :key="game.id"
+    <div v-if="!currentGame" class="game-grid">
+      <div v-for="g in games" :key="g.id"
         class="game-card"
-        :class="{ disabled: game.id === 'coming-soon' || game.id === 'coming-soon-2' }"
-        :style="{ '--game-color': game.color }"
-        @click="game.id !== 'coming-soon' && game.id !== 'coming-soon-2' ? playGame(game.id) : null"
-      >
-        <div class="game-icon">{{ game.icon }}</div>
-        <div class="game-name">{{ game.name }}</div>
-        <div class="game-desc">{{ game.desc }}</div>
+        :class="{ disabled: g.id.startsWith('coming-soon') }"
+        :style="{ '--gc': g.color, '--gbg': g.bg }"
+        @click="!g.id.startsWith('coming-soon') && playGame(g.id)">
+        <div class="gc-icon" :style="{ background: g.bg, color: g.color }">{{ g.icon }}</div>
+        <div class="gc-name">{{ g.name }}</div>
+        <div class="gc-desc">{{ g.desc }}</div>
       </div>
     </div>
 
-    <!-- 接星星游戏 -->
     <div v-if="currentGame === 'catch-stars'" class="game-play">
-      <button class="back-btn" @click="currentGame = null">← 返回游戏列表</button>
+      <button class="back-btn" @click="currentGame = null" style="margin-bottom: 12px;">&larr; 返回</button>
       <CatchStars :onComplete="handleComplete" />
     </div>
   </div>
 </template>
 
 <style scoped>
-.games-view { padding-bottom: 32px; }
-.page-header { display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-xl); }
-.back-btn { background: var(--bg-card); border: 2px solid #EEE; border-radius: var(--radius-full); padding: 8px 16px; font-family: var(--font-family); font-size: var(--font-size-sm); cursor: pointer; transition: all var(--transition-normal); }
-.back-btn:hover { background: #FFF0F0; border-color: var(--color-primary); }
-.page-header h1 { font-size: var(--font-size-2xl); }
-.games-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.game-card { background: var(--bg-card); border-radius: 14px; padding: 16px 8px; text-align: center; cursor: pointer; transition: all var(--transition-normal) var(--bounce); box-shadow: var(--shadow-sm); border: 3px solid transparent; }
-.game-card:hover:not(.disabled) { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--game-color); }
-.game-card.disabled { opacity: 0.5; cursor: not-allowed; }
-.game-icon { font-size: 32px; margin-bottom: 4px; line-height: 1.2; }
-.game-name { font-size: 15px; font-weight: 700; white-space: nowrap; }
-.game-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
-.game-play { margin-top: var(--space-md); }
+.page { padding-bottom: var(--space-8); animation: fadeInUp 0.3s ease; }
+.page-header h1 { font-size: var(--font-size-lg); }
+
+.game-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.game-card {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-2);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.game-card:hover:not(.disabled) { border-color: var(--gc); box-shadow: 0 0 0 1px var(--gc); transform: translateY(-2px); }
+.game-card.disabled { opacity: 0.45; cursor: default; }
+.gc-icon {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 6px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+}
+.gc-name { font-size: var(--font-size-sm); font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+.gc-desc { font-size: var(--font-size-xs); color: var(--text-tertiary); margin-top: 2px; }
+
+.game-play { margin-top: var(--space-3); }
 </style>
