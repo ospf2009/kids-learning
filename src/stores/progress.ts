@@ -128,7 +128,6 @@ export const useProgressStore = defineStore('progress', () => {
         await progressDB.add(p)
         progressMap.value.set(chapterId, p)
       } else {
-        // 深拷贝后再修改
         const p = JSON.parse(JSON.stringify(progress))
         p.totalQuestions += 1
         p.correctAnswers += isCorrect ? 1 : 0
@@ -137,6 +136,29 @@ export const useProgressStore = defineStore('progress', () => {
         p.lastAttemptDate = new Date().toISOString()
         await progressDB.put(p)
         progressMap.value.set(chapterId, p)
+      }
+
+      // 写入测验结果表（用于今日统计）
+      const today = new Date().toISOString().split('T')[0]
+      const quizResult: DBQuizResult = {
+        id: generateId(),
+        userId,
+        chapterId,
+        subject,
+        gradeId,
+        score: isCorrect ? 1 : 0,
+        totalQuestions: 1,
+        correctAnswers: isCorrect ? 1 : 0,
+        date: new Date().toISOString(),
+      }
+      await quizDB.add(quizResult)
+
+      // 同步更新本地今日统计
+      todayQuestionCount.value += 1
+      if (isCorrect) {
+        todayStats.value.correctAnswers += 1
+      } else {
+        todayStats.value.wrongAnswers += 1
       }
     } catch (e) {
       console.error('[progress] recordAnswer error:', e)
