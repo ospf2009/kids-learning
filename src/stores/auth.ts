@@ -1,14 +1,14 @@
 /**
  * 认证状态管理
- * 使用后端 API 存储
+ * 纯前端，IndexedDB 存储
  */
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { userApi, type ApiUser } from '@/api'
+import { userDB, hashPassword, generateId, type DBUser } from '@/db'
 
 export const useAuthStore = defineStore('auth', () => {
-  const currentUser = ref<ApiUser | null>(null)
+  const currentUser = ref<DBUser | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
@@ -22,7 +22,7 @@ export const useAuthStore = defineStore('auth', () => {
     const savedUserId = localStorage.getItem('kids-learning-current-user')
     if (savedUserId) {
       try {
-        const { user } = await userApi.get(savedUserId)
+        const user = await userDB.get(savedUserId)
         if (user) {
           currentUser.value = user
         }
@@ -39,12 +39,31 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      const { user } = await userApi.register(username, password, grade)
+      // 检查用户名是否已存在
+      const existing = await userDB.getByUsername(username)
+      if (existing) {
+        error.value = '用户名已存在'
+        return false
+      }
+
+      // 创建用户
+      const passwordHash = await hashPassword(password)
+      const user: DBUser = {
+        id: generateId(),
+        username,
+        passwordHash,
+        grade,
+        avatar: 'S',
+        createdAt: new Date().toISOString(),
+      }
+
+      await userDB.add(user)
       currentUser.value = user
       localStorage.setItem('kids-learning-current-user', user.id)
       return true
-    } catch (e: any) {
-      error.value = e.message || '注册失败'
+    } catch (e) {
+      console.error('Register failed:', e)
+      error.value = '注册失败，请重试'
       return false
     } finally {
       isLoading.value = false
@@ -57,12 +76,24 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      const { user } = await userApi.login(username, password)
+      const user = await userDB.getByUsername(username)
+      if (!user) {
+        error.value = '用户名不存在'
+        return false
+      }
+
+      const passwordHash = await hashPassword(password)
+      if (user.passwordHash !== passwordHash) {
+        error.value = '密码错误'
+        return false
+      }
+
       currentUser.value = user
       localStorage.setItem('kids-learning-current-user', user.id)
       return true
-    } catch (e: any) {
-      error.value = e.message || '登录失败'
+    } catch (e) {
+      console.error('Login failed:', e)
+      error.value = '登录失败，请重试'
       return false
     } finally {
       isLoading.value = false
@@ -78,23 +109,15 @@ export const useAuthStore = defineStore('auth', () => {
   // 更新年级
   async function updateGrade(newGrade: string) {
     if (!currentUser.value) return
-    try {
-      const { user } = await userApi.update(currentUser.value.id, { grade: newGrade })
-      currentUser.value = user
-    } catch (e) {
-      console.error('Update grade failed:', e)
-    }
+    currentUser.value.grade = newGrade
+    await userDB.put(currentUser.value)
   }
 
   // 更新头像
   async function updateAvatar(newAvatar: string) {
     if (!currentUser.value) return
-    try {
-      const { user } = await userApi.update(currentUser.value.id, { avatar: newAvatar })
-      currentUser.value = user
-    } catch (e) {
-      console.error('Update avatar failed:', e)
-    }
+    currentUser.value.avatar = newAvatar
+    await userDB.put(currentUser.value)
   }
 
   // 清除错误

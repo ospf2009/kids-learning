@@ -1,8 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { useAuthStore } from './auth'
-import { userApi, dailyApi } from '@/api'
-import { getCurrentLevel, getNextLevel } from '@/data/rewards'
+import { getCurrentLevel, getNextLevel, type Achievement } from '@/data/rewards'
 
 export interface DailyTask {
   id: string
@@ -14,12 +12,24 @@ export interface DailyTask {
   isCompleted: boolean
 }
 
+export interface UserState {
+  name: string
+  stars: number
+  streak: number
+  lastStudyDate: string
+  completedLessons: Record<string, string[]>
+  achievements: string[]
+  badges: string[]
+  dailyTasks: DailyTask[]
+  todayDate: string
+}
+
 export const useUserStore = defineStore('user', () => {
   // === 状态 ===
-  const name = ref('小朋友')
-  const stars = ref(0)
-  const streak = ref(0)
-  const lastStudyDate = ref('')
+  const name = ref<string>('小朋友')
+  const stars = ref<number>(0)
+  const streak = ref<number>(0)
+  const lastStudyDate = ref<string>('')
   const completedLessons = ref<Record<string, string[]>>({})
   const achievements = ref<string[]>([])
   const badges = ref<string[]>([])
@@ -48,44 +58,6 @@ export const useUserStore = defineStore('user', () => {
     return Math.round((todayCompleted.value / dailyTasks.value.length) * 100)
   })
 
-  // 获取当前登录用户的 ID
-  function getUserId(): string | null {
-    const auth = useAuthStore()
-    return auth.currentUser?.id || null
-  }
-
-  // 同步用户数据到 API
-  async function syncToServer() {
-    const userId = getUserId()
-    if (!userId) return
-
-    try {
-      await userApi.update(userId, {
-        stars: stars.value,
-        streak: streak.value,
-        lastStudyDate: lastStudyDate.value,
-        completedLessons: completedLessons.value,
-        achievements: achievements.value,
-        badges: badges.value,
-      })
-    } catch (e) {
-      console.error('Sync to server failed:', e)
-    }
-  }
-
-  // 同步每日任务到 API
-  async function syncDailyTasks() {
-    const userId = getUserId()
-    if (!userId || dailyTasks.value.length === 0) return
-
-    try {
-      const today = new Date().toISOString().split('T')[0]
-      await dailyApi.save(userId, today, dailyTasks.value)
-    } catch (e) {
-      console.error('Sync daily tasks failed:', e)
-    }
-  }
-
   // === 初始化每日任务 ===
   function initDailyTasks() {
     const today = new Date().toISOString().split('T')[0]
@@ -101,8 +73,10 @@ export const useUserStore = defineStore('user', () => {
     const yesterday = new Date()
     yesterday.setDate(yesterday.getDate() - 1)
     const yesterdayStr = yesterday.toISOString().split('T')[0]
-
-    if (lastStudyDate.value !== today && lastStudyDate.value !== yesterdayStr) {
+    
+    if (lastStudyDate.value === yesterdayStr) {
+      // 连续学习
+    } else if (lastStudyDate.value !== today) {
       streak.value = 0
     }
   }
@@ -117,15 +91,12 @@ export const useUserStore = defineStore('user', () => {
       }
     }
 
+    // 奖励星星
     if (correct) {
       stars.value += 2
     } else {
-      stars.value += 1
+      stars.value += 1 // 参与也有奖励
     }
-
-    // 异步同步（不等待完成）
-    syncToServer()
-    syncDailyTasks()
   }
 
   // === 完成课程 ===
@@ -144,14 +115,14 @@ export const useUserStore = defineStore('user', () => {
       lastStudyDate.value = today
     }
 
-    syncToServer()
+    saveToLocalStorage()
   }
 
   // === 解锁成就 ===
   function unlockAchievement(achievementId: string) {
     if (!achievements.value.includes(achievementId)) {
       achievements.value.push(achievementId)
-      syncToServer()
+      saveToLocalStorage()
     }
   }
 
@@ -159,57 +130,45 @@ export const useUserStore = defineStore('user', () => {
   function redeemReward(cost: number): boolean {
     if (stars.value >= cost) {
       stars.value -= cost
-      syncToServer()
+      saveToLocalStorage()
       return true
     }
     return false
   }
 
-  // === 从 API 加载用户状态 ===
-  async function loadFromServer() {
-    const auth = useAuthStore()
-    if (!auth.currentUser) return
-
-    try {
-      const { user } = await userApi.get(auth.currentUser.id)
-      stars.value = user.stars || 0
-      streak.value = user.streak || 0
-      lastStudyDate.value = user.last_study_date || ''
-
-      try {
-        completedLessons.value = JSON.parse(user.completed_lessons || '{}')
-      } catch { completedLessons.value = {} }
-
-      try {
-        achievements.value = JSON.parse(user.achievements || '[]')
-      } catch { achievements.value = [] }
-
-      try {
-        badges.value = JSON.parse(user.badges || '[]')
-      } catch { badges.value = [] }
-
-      // 加载每日任务
-      const today = new Date().toISOString().split('T')[0]
-      try {
-        const { tasks } = await dailyApi.get(auth.currentUser.id, today)
-        if (tasks.length > 0) {
-          dailyTasks.value = tasks
-        }
-      } catch { /* 忽略 */ }
-
-      initDailyTasks()
-    } catch (e) {
-      console.error('Load from server failed:', e)
-    }
-  }
-
-  // === 兼容 localStorage（降级方案） ===
+  // === 持久化 ===
   function saveToLocalStorage() {
-    // 不再使用 localStorage，但保留接口以防万一
+    const data: UserState = {
+      name: name.value,
+      stars: stars.value,
+      streak: streak.value,
+      lastStudyDate: lastStudyDate.value,
+      completedLessons: completedLessons.value,
+      achievements: achievements.value,
+      badges: badges.value,
+      dailyTasks: dailyTasks.value,
+      todayDate: new Date().toISOString().split('T')[0] || '',
+    }
+    localStorage.setItem('kids-learning-user', JSON.stringify(data))
   }
 
   function loadFromLocalStorage() {
-    // 不再使用 localStorage
+    const raw = localStorage.getItem('kids-learning-user')
+    if (!raw) return
+
+    try {
+      const data: UserState = JSON.parse(raw)
+      name.value = data.name || '小朋友'
+      stars.value = data.stars || 0
+      streak.value = data.streak || 0
+      lastStudyDate.value = data.lastStudyDate || ''
+      completedLessons.value = (data.completedLessons || {}) as Record<string, string[]>
+      achievements.value = (data.achievements || []) as string[]
+      badges.value = (data.badges || []) as string[]
+      dailyTasks.value = data.dailyTasks || []
+    } catch (e) {
+      console.error('Failed to load user data:', e)
+    }
   }
 
   return {
@@ -220,6 +179,5 @@ export const useUserStore = defineStore('user', () => {
     initDailyTasks, completeQuestion, completeLesson,
     unlockAchievement, redeemReward,
     saveToLocalStorage, loadFromLocalStorage,
-    loadFromServer, syncToServer,
   }
 })
