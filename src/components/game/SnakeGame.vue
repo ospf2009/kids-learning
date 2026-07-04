@@ -21,6 +21,62 @@ const gameSpeed = ref(350)
 let gameLoop: ReturnType<typeof setInterval> | null = null
 let ctx: CanvasRenderingContext2D | null = null
 
+const audioCtx = ref<AudioContext | null>(null)
+function getAudio() {
+  if (!audioCtx.value) audioCtx.value = new AudioContext()
+  return audioCtx.value
+}
+function playEatSound() {
+  try {
+    const ctx = getAudio()
+    const now = ctx.currentTime
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain); gain.connect(ctx.destination)
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(880, now)
+    osc.frequency.setValueAtTime(1320, now + 0.05)
+    gain.gain.setValueAtTime(0.2, now)
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2)
+    osc.start(now); osc.stop(now + 0.25)
+  } catch {}
+}
+function playDeathSound() {
+  try {
+    const ctx = getAudio()
+    const now = ctx.currentTime
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain); gain.connect(ctx.destination)
+    osc.type = 'sawtooth'
+    osc.frequency.setValueAtTime(200, now)
+    osc.frequency.exponentialRampToValueAtTime(40, now + 0.4)
+    gain.gain.setValueAtTime(0.15, now)
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5)
+    osc.start(now); osc.stop(now + 0.5)
+  } catch {}
+}
+function playVictorySound() {
+  try {
+    const ctx = getAudio()
+    const now = ctx.currentTime
+    const notes = [523, 659, 784, 1047, 784, 1047]
+    const durations = [0.12, 0.12, 0.12, 0.12, 0.12, 0.25]
+    let time = now
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.type = 'triangle'
+      osc.frequency.setValueAtTime(freq, time)
+      gain.gain.setValueAtTime(0.2, time)
+      gain.gain.exponentialRampToValueAtTime(0.01, time + (durations[i] || 0.12))
+      osc.start(time); osc.stop(time + (durations[i] || 0.12) + 0.05)
+      time += durations[i] || 0.12
+    })
+  } catch {}
+}
+
 // 鼠标/触摸拖动控制
 let touchStartX = 0
 let touchStartY = 0
@@ -112,6 +168,7 @@ function tick() {
 
   if (newHead.x === food.value.x && newHead.y === food.value.y) {
     score.value += 10
+    playEatSound()
     if (gameSpeed.value > 120 && score.value % 30 === 0) {
       gameSpeed.value = Math.max(120, gameSpeed.value - 20)
       restartLoop()
@@ -127,8 +184,10 @@ function gameOver() {
   isGameOver.value = true
   isPlaying.value = false
   stopLoop()
+  if (score.value > 0) playDeathSound()
   if (score.value > highScore.value) {
     highScore.value = score.value
+    setTimeout(playVictorySound, 300)
     try { localStorage.setItem('snake-highscore', String(highScore.value)) } catch {}
   }
   draw()
