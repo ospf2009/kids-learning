@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { getChapters, type GradeId } from '@/data/chapters'
+import { getChapters, type GradeId, type Subject } from '@/data/chapters'
 import { playVictorySound, playCorrectSound, playWrongSound } from '@/utils/sound'
 
 const router = useRouter()
@@ -15,7 +15,15 @@ const showResult = ref(false)
 const isCorrect = ref(false)
 const showCompletion = ref(false)
 const correctCount = ref(0)
-const startTime = ref(Date.now())
+
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
 
 function generateDailyChallenge() {
   correctCount.value = 0
@@ -23,34 +31,29 @@ function generateDailyChallenge() {
   selectedAnswer.value = ''
   showResult.value = false
   showCompletion.value = false
-  startTime.value = Date.now()
 
   const grade = (authStore.grade || 'grade1-down') as GradeId
-  const subjects = ['chinese', 'math', 'english'] as const
+  const subjects: Subject[] = ['chinese', 'math', 'english']
   const picked: any[] = []
 
   for (const subject of subjects) {
     const chapters = getChapters(grade, subject)
     for (const ch of chapters) {
       for (const q of ch.questions) {
-        if (picked.length < 10) {
-          picked.push({ ...q, subject, chapterTitle: ch.title })
-        }
+        picked.push({ ...q, subject, chapterTitle: ch.title })
       }
     }
   }
 
-  // 随机打乱
-  picked.sort(() => Math.random() - 0.5)
-  questions.value = picked.slice(0, 10)
+  // 随机打乱并取10题（涵盖3科）
+  const shuffled = shuffleArray(picked)
+  questions.value = shuffled.slice(0, 10)
 }
 
 // 初始化
 generateDailyChallenge()
 
 const currentQuestion = computed(() => questions.value[currentIndex.value])
-
-import { computed } from 'vue'
 
 const progress = computed(() => {
   if (questions.value.length === 0) return 0
@@ -88,16 +91,16 @@ function goBack() { router.push('/') }
   <div class="challenge-page">
     <header class="page-header">
       <button class="back-btn" @click="goBack">← 返回</button>
-      <h1>⭐ 每日挑战</h1>
-      <button class="refresh-btn" @click="generateDailyChallenge"><></button>
+      <h1>每日挑战</h1>
+      <button class="refresh-btn" @click="generateDailyChallenge" title="换一批题">换题</button>
     </header>
 
     <div class="challenge-info" v-if="!showCompletion">
       <div class="info-card">
-        <div class="info-icon">💡</div>
+        <div class="info-icon">每日挑战</div>
         <div class="info-text">
-          <div class="info-title">{{ questions.length }}道精选题目</div>
-          <div class="info-desc">📖 🔢 🔤 包含语文、数学、英语</div>
+          <div class="info-title">{{ questions.length }}道精选混合题</div>
+          <div class="info-desc">包含语文、数学、英语三科</div>
         </div>
       </div>
       <div class="progress-section">
@@ -108,13 +111,16 @@ function goBack() { router.push('/') }
 
     <div class="question-area" v-if="currentQuestion && !showCompletion">
       <div class="question-card">
-        <div class="question-tag">{{ currentQuestion.subject === 'chinese' ? '📖' : currentQuestion.subject === 'math' ? '🔢' : '🔤' }} {{ currentQuestion.chapterTitle }}</div>
+        <div class="question-tag">
+          {{ currentQuestion.subject === 'chinese' ? '语文' : currentQuestion.subject === 'math' ? '数学' : '英语' }}
+          . {{ currentQuestion.chapterTitle }}
+        </div>
         <h2 class="question-text">{{ currentQuestion.question }}</h2>
       </div>
 
-      <div class="options-grid" v-if="currentQuestion.type === 'choice' || currentQuestion.type === 'judge'">
+      <div class="options-grid" v-if="currentQuestion.type === 'choice'">
         <button
-          v-for="opt in (currentQuestion.type === 'judge' ? ['对', '错'] : currentQuestion.options)"
+          v-for="opt in currentQuestion.options"
           :key="opt"
           class="option-btn"
           :class="{
@@ -122,9 +128,24 @@ function goBack() { router.push('/') }
             correct: showResult && opt === currentQuestion.answer,
             wrong: showResult && selectedAnswer === opt && opt !== currentQuestion.answer
           }"
-          @click="selectAnswer(opt!)"
+          @click="selectAnswer(opt)"
           :disabled="showResult"
         >{{ opt }}</button>
+      </div>
+
+      <div class="options-grid options-grid-2" v-if="currentQuestion.type === 'judge'">
+        <button
+          v-for="opt in ['对', '错']"
+          :key="opt"
+          class="option-btn"
+          :class="{
+            selected: selectedAnswer === opt,
+            correct: showResult && opt === currentQuestion.answer,
+            wrong: showResult && selectedAnswer === opt && opt !== currentQuestion.answer
+          }"
+          @click="selectAnswer(opt)"
+          :disabled="showResult"
+        >{{ opt === '对' ? '✓ 对' : '✗ 错' }}</button>
       </div>
 
       <div v-if="currentQuestion.type === 'fill'" class="fill-area">
@@ -145,12 +166,13 @@ function goBack() { router.push('/') }
       </div>
 
       <div class="result-feedback" v-if="showResult">
-        <div class="feedback-icon">{{ isCorrect ? ':)' : ':)' }}</div>
+        <div class="feedback-icon" v-if="isCorrect">🎉</div>
+        <div class="feedback-icon" v-else>💪</div>
         <div class="feedback-text">
           {{ isCorrect ? '答对啦！' : '正确答案是「' + currentQuestion?.answer + '」' }}
         </div>
         <button class="next-btn" @click="nextQuestion">
-          {{ currentIndex < questions.length - 1 ? '下一题 ->' : '查看成绩 C' }}
+          {{ currentIndex < questions.length - 1 ? '下一题 →' : '查看成绩 🏆' }}
         </button>
       </div>
     </div>
@@ -160,12 +182,12 @@ function goBack() { router.push('/') }
         <div class="trophy">🏆</div>
         <h2>每日挑战完成！</h2>
         <div class="stats">
-          <div class="stat-item"><div class="stat-value">{{ questions.length }}</div><div class="stat-label">📝 总题数</div></div>
-          <div class="stat-item"><div class="stat-value correct">{{ correctCount }}</div><div class="stat-label">✅ 答对</div></div>
-          <div class="stat-item"><div class="stat-value">{{ Math.round(correctCount / questions.length * 100) }}%</div><div class="stat-label">🎯 正确率</div></div>
+          <div class="stat-item"><div class="stat-value">{{ questions.length }}</div><div class="stat-label">总题数</div></div>
+          <div class="stat-item"><div class="stat-value correct">{{ correctCount }}</div><div class="stat-label">答对</div></div>
+          <div class="stat-item"><div class="stat-value">{{ questions.length ? Math.round(correctCount / questions.length * 100) : 0 }}%</div><div class="stat-label">正确率</div></div>
         </div>
         <div class="completion-actions">
-          <button class="btn-action btn-primary" @click="generateDailyChallenge">再来一次 <></button>
+          <button class="btn-action btn-primary" @click="generateDailyChallenge">再来一次</button>
           <button class="btn-action btn-secondary" @click="goBack">返回首页</button>
         </div>
       </div>
@@ -179,11 +201,12 @@ function goBack() { router.push('/') }
 .back-btn { background: white; border: 2px solid #EEE; border-radius: 20px; padding: 8px 16px; font-size: 14px; cursor: pointer; font-family: inherit; }
 .back-btn:hover { border-color: var(--color-primary); }
 h1 { font-size: 20px; flex: 1; }
-.refresh-btn { background: white; border: 2px solid #EEE; border-radius: 50%; width: 40px; height: 40px; font-size: 18px; cursor: pointer; }
+.refresh-btn { background: white; border: 2px solid #EEE; border-radius: 8px; padding: 8px 12px; font-size: 13px; cursor: pointer; font-family: inherit; color: #888; }
+.refresh-btn:hover { border-color: #FFD700; color: #333; }
 
 .challenge-info { margin-bottom: 16px; }
 .info-card { display: flex; align-items: center; gap: 12px; background: linear-gradient(135deg, #FFF9E6, #FFF3CC); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
-.info-icon { font-size: 36px; }
+.info-icon { font-size: 16px; font-weight: 700; color: #FFB800; }
 .info-title { font-size: 16px; font-weight: 700; color: #333; }
 .info-desc { font-size: 13px; color: #888; }
 .progress-section { display: flex; align-items: center; gap: 12px; }
@@ -196,6 +219,7 @@ h1 { font-size: 20px; flex: 1; }
 .question-text { font-size: 22px; color: #333; line-height: 1.4; }
 
 .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.options-grid-2 { grid-template-columns: 1fr 1fr; max-width: 320px; margin: 0 auto; }
 .option-btn { background: white; border: 3px solid #EEE; border-radius: 14px; padding: 16px; font-family: inherit; font-size: 18px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
 .option-btn:hover:not(:disabled) { transform: translateY(-2px); border-color: #FFD700; }
 .option-btn.selected { border-color: #FFD700; background: #FFFDE6; }
@@ -221,5 +245,7 @@ h1 { font-size: 20px; flex: 1; }
 .completion-actions { display: flex; gap: 12px; justify-content: center; }
 .btn-action { padding: 12px 24px; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; }
 .btn-primary { background: linear-gradient(135deg, #FFD700, #FF8E8E); color: white; }
+.btn-primary:hover { transform: scale(1.02); }
 .btn-secondary { background: #F5F5F5; color: #333; }
+.btn-secondary:hover { background: #E8E8E8; }
 </style>

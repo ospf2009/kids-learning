@@ -56,7 +56,7 @@ const chinese1up: Chapter[] = [
     { id: 'se7', type: 'choice', question: '"木" 指的是？', options: ['树木', '泥土', '石头'], answer: '树木' },
     { id: 'se8', type: 'fill', question: '金___水火土', answer: '木' },
     { id: 'se9', type: 'judge', question: '"日" 是太阳的意思', answer: '对' },
-    { id: 'sz10', type: 'choice', question: '"月" 指的是？', options: ['月亮', '太阳', '星星'], answer: '月亮' },
+    { id: 'se10', type: 'choice', question: '"月" 指的是？', options: ['月亮', '太阳', '星星'], answer: '月亮' },
   ]},
 ]
 
@@ -115,10 +115,10 @@ const math1up: Chapter[] = [
 // ===== 一年级上册 - 英语 =====
 const english1up: Chapter[] = [
   { id: 'e1u-abc', title: '字母 A-M', icon: '🅰️', description: '认识字母A到M', questions: [
-    { id: 'ea1', type: 'choice', question: 'A 后面是哪个字母？', options: ['📖', 'C', 'D'], answer: '📖' },
+    { id: 'ea1', type: 'choice', question: 'A 后面是哪个字母？', options: ['B', 'C', 'D'], answer: 'B' },
     { id: 'ea2', type: 'fill', question: 'A B C D ___', answer: 'E' },
-    { id: 'ea3', type: 'choice', question: '"apple" 的首字母是？', options: ['A', '📖', 'C'], answer: 'A' },
-    { id: 'ea4', type: 'choice', question: '"cat" 的首字母是？', options: ['📖', 'C', 'D'], answer: 'C' },
+    { id: 'ea3', type: 'choice', question: '"apple" 的首字母是？', options: ['A', 'B', 'C'], answer: 'A' },
+    { id: 'ea4', type: 'choice', question: '"cat" 的首字母是？', options: ['B', 'C', 'D'], answer: 'C' },
     { id: 'ea5', type: 'fill', question: 'F G H ___ J', answer: 'I' },
     { id: 'ea6', type: 'judge', question: '"dog" 的首字母是 d', answer: '对' },
     { id: 'ea7', type: 'choice', question: '"egg" 的首字母是？', options: ['D', 'E', 'F'], answer: 'E' },
@@ -127,8 +127,8 @@ const english1up: Chapter[] = [
     { id: 'ea10', type: 'choice', question: '哪个字母像一把椅子？', options: ['L', 'H', 'A'], answer: 'L' },
   ]},
   { id: 'e1u-abc2', title: '字母 N-Z', icon: '🅽', description: '认识字母N到Z', questions: [
-    { id: 'eb1', type: 'fill', question: 'N O P Q ___', answer: '🔄' },
-    { id: 'eb2', type: 'choice', question: '"queen" 的首字母是？', options: ['✏️', 'Q', '🔄'], answer: 'Q' },
+    { id: 'eb1', type: 'fill', question: 'N O P Q ___', answer: 'R' },
+    { id: 'eb2', type: 'choice', question: '"queen" 的首字母是？', options: ['P', 'Q', 'R'], answer: 'Q' },
     { id: 'eb3', type: 'fill', question: 'S T U V ___', answer: 'W' },
     { id: 'eb4', type: 'choice', question: '最后一个字母是？', options: ['X', 'Y', 'Z'], answer: 'Z' },
     { id: 'eb5', type: 'judge', question: '"sun" 的首字母是 s', answer: '对' },
