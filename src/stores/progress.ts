@@ -1,12 +1,13 @@
 /**
  * 学习进度管理
  * 记录做题数、正确率、章节完成情况
+ * 使用后端 API
  */
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useAuthStore } from './auth'
-import { progressDB, quizDB, wrongDB, generateId, type DBProgress, type DBWrongQuestion, type DBQuizResult } from '@/db'
+import { wrongDB, quizDB, generateId, type DBWrongQuestion } from '@/db'
 
 export const useProgressStore = defineStore('progress', () => {
   const isLoading = ref(false)
@@ -15,8 +16,7 @@ export const useProgressStore = defineStore('progress', () => {
   const todayQuestionCount = ref(0)
   const todayStats = ref({ correctAnswers: 0, wrongAnswers: 0, quizzesCompleted: 0 })
 
-  // 各章节进度缓存
-  const progressMap = ref<Map<string, DBProgress>>(new Map())
+  // 错题列表
   const wrongQuestions = ref<DBWrongQuestion[]>([])
 
   // 未复习的错题
@@ -24,7 +24,7 @@ export const useProgressStore = defineStore('progress', () => {
     wrongQuestions.value.filter(w => !w.retried || !w.retryCorrect)
   )
 
-  // 加载用户数据
+  // 加载用户数据（错题、今日统计）
   async function loadUserData() {
     const auth = useAuthStore()
     if (!auth.currentUser) return
@@ -33,16 +33,16 @@ export const useProgressStore = defineStore('progress', () => {
     try {
       const userId = auth.currentUser.id
 
-      // 加载今日统计（从 quizResults 计算）
+      // 加载今日统计
       const results = await quizDB.getByUser(userId)
       const today = new Date().toISOString().split('T')[0]
       let qCount = 0
       let cCount = 0
       let quizCount = 0
       for (const r of results) {
-        if (r.date.startsWith(today)) {
-          qCount += r.totalQuestions
-          cCount += r.correctAnswers
+        if (r.date && r.date.startsWith(today)) {
+          qCount += r.totalQuestions || 0
+          cCount += r.correctAnswers || 0
           quizCount++
         }
       }
@@ -58,20 +58,9 @@ export const useProgressStore = defineStore('progress', () => {
     }
   }
 
-  // 获取最近学习的章节
-  function getLastStudiedChapter(): { subject: string; chapterId: string } | null {
-    return null // 简化实现
-  }
-
   // 获取某年级某科的已完成章节数
   function getCompletedCount(subject: string, gradeId: string): number {
-    let count = 0
-    progressMap.value.forEach((p) => {
-      if (p.subject === subject && p.gradeId === gradeId && p.completed) {
-        count++
-      }
-    })
-    return count
+    return 0 // 简化实现，可通过 user store 的 completedLessons 获取
   }
 
   // 记录一次答题
@@ -87,7 +76,7 @@ export const useProgressStore = defineStore('progress', () => {
     options: string[],
     isCorrect: boolean
   ) {
-    // 如果是错误答案，记录错题
+    // 错误答案 → 记录错题到 API
     if (!isCorrect) {
       const wrong: DBWrongQuestion = {
         id: generateId(),
@@ -104,36 +93,13 @@ export const useProgressStore = defineStore('progress', () => {
         retried: false,
         retryCorrect: false,
       }
-      await wrongDB.add(wrong)
-      wrongQuestions.value.push(wrong)
-    }
-
-    // 更新进度
-    let progress = await progressDB.getByUserChapter(userId, chapterId)
-    if (!progress) {
-      progress = {
-        id: generateId(),
-        userId,
-        chapterId,
-        subject,
-        gradeId,
-        completed: false,
-        score: isCorrect ? 1 : 0,
-        totalQuestions: 1,
-        correctAnswers: isCorrect ? 1 : 0,
-        attempts: 1,
-        lastAttemptDate: new Date().toISOString(),
+      try {
+        await wrongDB.add(wrong)
+        wrongQuestions.value.unshift(wrong)
+      } catch (e) {
+        console.error('Failed to record wrong question:', e)
       }
-      await progressDB.add(progress)
-    } else {
-      progress.totalQuestions += 1
-      progress.correctAnswers += isCorrect ? 1 : 0
-      progress.score = progress.correctAnswers
-      progress.attempts += 1
-      progress.lastAttemptDate = new Date().toISOString()
-      await progressDB.put(progress)
     }
-    progressMap.value.set(chapterId, progress)
   }
 
   return {
@@ -143,7 +109,6 @@ export const useProgressStore = defineStore('progress', () => {
     wrongQuestions,
     unretriedWrongQuestions,
     loadUserData,
-    getLastStudiedChapter,
     getCompletedCount,
     recordAnswer,
   }

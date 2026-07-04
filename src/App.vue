@@ -33,9 +33,15 @@ const progressStore = useProgressStore()
 onMounted(async () => {
   try {
     await authStore.restoreSession()
-    userStore.loadFromLocalStorage()
-    userStore.initDailyTasks()
-    await progressStore.loadUserData()
+
+    if (authStore.isLoggedIn) {
+      // 从服务器加载用户数据
+      await userStore.loadFromServer()
+      await progressStore.loadUserData()
+    } else {
+      // 未登录时使用旧有的 localStorage 数据（兼容）
+      userStore.initDailyTasks()
+    }
   } catch (e) {
     window.__kidsErrors = window.__kidsErrors || []
     window.__kidsErrors.push({ msg: '[App mount] ' + (e instanceof Error ? e.message : String(e)) })
