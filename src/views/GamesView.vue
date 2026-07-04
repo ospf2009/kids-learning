@@ -2,6 +2,7 @@
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 import CatchStars from '@/components/game/CatchStars.vue'
+import SnakeGame from '@/components/game/SnakeGame.vue'
 
 const router = useRouter()
 const currentGame = ref<string | null>(null)
@@ -12,7 +13,7 @@ function handleComplete(score: number) {}
 
 const games = [
   { id: 'catch-stars', name: '接星星', icon: '*', desc: '接住星星避开炸弹', color: '#E86363', bg: '#FFF5F5' },
-  { id: 'coming-soon', name: '贪吃蛇', icon: 'S', desc: '即将推出', color: '#3BA99E', bg: '#F0FDF9' },
+  { id: 'snake', name: '贪吃蛇', icon: 'S', desc: '经典贪吃蛇，吃食物得分', color: '#22C55E', bg: '#F0FFF4' },
   { id: 'coming-soon-2', name: '打地鼠', icon: 'H', desc: '即将推出', color: '#3B82F6', bg: '#EFF6FF' },
 ]
 </script>
@@ -39,6 +40,10 @@ const games = [
     <div v-if="currentGame === 'catch-stars'" class="game-play">
       <button class="back-btn" @click="currentGame = null" style="margin-bottom: 12px;">&larr; 返回</button>
       <CatchStars :onComplete="handleComplete" />
+    </div>
+    <div v-if="currentGame === 'snake'" class="game-play">
+      <button class="back-btn" @click="currentGame = null" style="margin-bottom: 12px;">&larr; 返回</button>
+      <SnakeGame />
     </div>
   </div>
 </template>
