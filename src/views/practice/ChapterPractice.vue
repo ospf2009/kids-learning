@@ -6,6 +6,7 @@ import { useProgressStore } from '@/stores/progress'
 import { useUserStore } from '@/stores/user'
 import { getChapter, type GradeId, type Subject, type Question } from '@/data/chapters'
 import { getMixedQuestions } from '@/utils/questionGenerator'
+import { wrongDB } from '@/db'
 import { playCorrectSound, playWrongSound, speakCorrect, speakWrong, playVictorySound } from '@/utils/sound'
 
 const router = useRouter()
@@ -76,6 +77,14 @@ async function selectAnswer(answer: string) {
         q.options || [],
         isCorrect.value
       )
+      // 答对时，自动将该题从错题本中移除
+      if (isCorrect.value) {
+        const wrongs = await wrongDB.getByUserChapter(authStore.currentUser.id, chapterId)
+        const matched = wrongs.find(w => w.questionId === q.id)
+        if (matched) {
+          await wrongDB.remove(matched.id)
+        }
+      }
     } catch (e) {
       console.error('[ChapterPractice] recordAnswer error:', e)
     }

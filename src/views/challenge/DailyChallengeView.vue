@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useProgressStore } from '@/stores/progress'
 import { getChapters, type GradeId, type Subject } from '@/data/chapters'
 import { playVictorySound, playCorrectSound, playWrongSound } from '@/utils/sound'
+import { wrongDB } from '@/db'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -133,7 +134,15 @@ function selectAnswer(answer: string) {
       q.answer,
       q.options || [],
       isCorrect.value
-    ).catch(e => console.error('[DailyChallenge] recordAnswer:', e))
+    ).then(() => {
+      // 答对时自动从错题本移除
+      if (isCorrect.value && authStore.currentUser) {
+        wrongDB.getByUserChapter(authStore.currentUser.id, 'daily-challenge').then(wrongs => {
+          const matched = wrongs.find(w => w.questionId === q.id)
+          if (matched) wrongDB.remove(matched.id)
+        }).catch(() => {})
+      }
+    }).catch(e => console.error('[DailyChallenge] recordAnswer:', e))
   }
 }
 
