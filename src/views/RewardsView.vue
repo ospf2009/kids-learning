@@ -13,7 +13,7 @@ function goBack() { router.push('/') }
 
 function redeemReward(reward: typeof rewards[0]) {
   if (userStore.redeemReward(reward.cost)) {
-    alert(`🎉 成功兑换：${reward.name}！`)
+    alert(`:) 成功兑换：${reward.name}！`)
   } else {
     alert('星星不够哦，继续学习赚取更多星星吧！')
   }
@@ -38,7 +38,7 @@ const levelInfo = computed(() => {
       <div class="balance-icon">⭐</div>
       <div class="balance-info">
         <div class="balance-count">{{ userStore.stars }}</div>
-        <div class="balance-label">我的星星</div>
+        <div class="balance-label">⭐ 我的星星</div>
       </div>
       <div class="level-badge">
         {{ levelInfo.current?.icon }} {{ levelInfo.current?.name }}
@@ -54,7 +54,7 @@ const levelInfo = computed(() => {
       <div class="progress-bar">
         <div class="fill" :style="{ width: userStore.levelProgress + '%' }"></div>
       </div>
-      <div class="progress-text">还差 {{ levelInfo.next.minStars - userStore.stars }} ⭐ 升级</div>
+      <div class="progress-text">还差 {{ levelInfo.next.minStars - userStore.stars }} * 升级</div>
     </div>
 
     <!-- 标签页 -->
@@ -68,12 +68,12 @@ const levelInfo = computed(() => {
         class="tab-btn"
         :class="{ active: activeTab === 'achievements' }"
         @click="activeTab = 'achievements'"
-      >🎯 成就</button>
+      >🏆 成就</button>
       <button
         class="tab-btn"
         :class="{ active: activeTab === 'badges' }"
         @click="activeTab = 'badges'"
-      >🏅 徽章</button>
+      >🎖 徽章</button>
     </div>
 
     <!-- 商店 -->
@@ -89,7 +89,7 @@ const levelInfo = computed(() => {
           <div class="reward-name">{{ reward.name }}</div>
           <div class="reward-desc">{{ reward.description }}</div>
           <div class="reward-cost">
-            ⭐ {{ reward.cost }}
+            * {{ reward.cost }}
           </div>
           <button
             class="btn btn-accent redeem-btn"
@@ -118,8 +118,8 @@ const levelInfo = computed(() => {
             <div class="ach-condition">条件：{{ ach.condition }}</div>
           </div>
           <div class="ach-reward">
-            <span v-if="userStore.achievements.includes(ach.id)">✅</span>
-            <span v-else>⭐ {{ ach.reward }}</span>
+            <span v-if="userStore.achievements.includes(ach.id)">✔</span>
+            <span v-else>* {{ ach.reward }}</span>
           </div>
         </div>
       </div>
@@ -128,8 +128,8 @@ const levelInfo = computed(() => {
     <!-- 徽章 -->
     <div class="tab-content" v-if="activeTab === 'badges'">
       <div class="badges-empty" v-if="userStore.badges.length === 0">
-        <div class="empty-icon">🏅</div>
-        <p>还没有徽章哦，去商店兑换吧！</p>
+        <div class="empty-icon">📭</div>
+        <p>📭 还没有徽章哦，去商店兑换吧！</p>
       </div>
       <div class="badges-grid" v-else>
         <div v-for="badge in userStore.badges" :key="badge" class="badge-item">

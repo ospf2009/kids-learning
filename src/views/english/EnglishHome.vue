@@ -18,7 +18,7 @@ function isLessonCompleted(lessonId: string) {
     <header class="page-header">
       <button class="back-btn" @click="goBack">← 返回</button>
       <h1>🔤 英语天地</h1>
-      <div class="header-decoration">🌈</div>
+      <div class="header-decoration">～</div>
     </header>
 
     <div class="lessons-grid">
@@ -35,8 +35,8 @@ function isLessonCompleted(lessonId: string) {
           <p>{{ lesson.description }}</p>
         </div>
         <div class="lesson-status">
-          <span v-if="isLessonCompleted(lesson.id)" class="completed-badge">✅</span>
-          <span v-else class="start-arrow">→</span>
+          <span v-if="isLessonCompleted(lesson.id)" class="completed-badge">✔</span>
+          <span v-else class="start-arrow">-></span>
         </div>
       </div>
     </div>

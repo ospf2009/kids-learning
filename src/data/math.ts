@@ -1,4 +1,4 @@
-// 🔢 数学学习数据 - 一年级下册
+// [数] 数学学习数据 - 一年级下册
 export interface MathLesson {
   id: string
   title: string
@@ -30,7 +30,7 @@ export const mathLessons: MathLesson[] = [
     id: 'add-1',
     title: '加法小火车',
     type: 'add',
-    icon: '🚂',
+    icon: '[T]',
     description: '数字手拉手，越来越大啦',
     gameMode: 'choice',
     items: [
@@ -45,7 +45,7 @@ export const mathLessons: MathLesson[] = [
     id: 'sub-1',
     title: '减法滑滑梯',
     type: 'subtract',
-    icon: '🎢',
+    icon: '[R]',
     description: '数字往下滑，越来越小啦',
     gameMode: 'choice',
     items: [
@@ -60,7 +60,7 @@ export const mathLessons: MathLesson[] = [
     id: 'timed-1',
     title: '口算大闯关',
     type: 'timed',
-    icon: '⚡',
+    icon: '~',
     description: '60秒限时挑战，看谁算得快',
     gameMode: 'timed',
     items: [
@@ -80,15 +80,15 @@ export const mathLessons: MathLesson[] = [
     id: 'drag-1',
     title: '数数小能手',
     type: 'drag',
-    icon: '🍎',
+    icon: '[A]',
     description: '拖拽苹果来数数，数对了就过关',
     gameMode: 'drag',
     items: [
-      { id: 'd1', question: '数一数，有几个苹果？', answer: 3, dragItems: [{ id: 'apple', emoji: '🍎', count: 3 }], hint: '一个一个数' },
-      { id: 'd2', question: '数一数，有几个星星？', answer: 5, dragItems: [{ id: 'star', emoji: '⭐', count: 5 }], hint: '数数看' },
-      { id: 'd3', question: '数一数，有几个爱心？', answer: 4, dragItems: [{ id: 'heart', emoji: '❤️', count: 4 }], hint: '一个一个数' },
-      { id: 'd4', question: '苹果和橘子一共有几个？', answer: 6, dragItems: [{ id: 'apple', emoji: '🍎', count: 3 }, { id: 'orange', emoji: '🍊', count: 3 }], hint: '先数苹果，再数橘子' },
-      { id: 'd5', question: '兔子和小猫一共有几只？', answer: 7, dragItems: [{ id: 'rabbit', emoji: '🐰', count: 4 }, { id: 'cat', emoji: '🐱', count: 3 }], hint: '加在一起数' },
+      { id: 'd1', question: '数一数，有几个苹果？', answer: 3, dragItems: [{ id: 'apple', emoji: '[A]', count: 3 }], hint: '一个一个数' },
+      { id: 'd2', question: '数一数，有几个星星？', answer: 5, dragItems: [{ id: 'star', emoji: '*', count: 5 }], hint: '数数看' },
+      { id: 'd3', question: '数一数，有几个爱心？', answer: 4, dragItems: [{ id: 'heart', emoji: '<3', count: 4 }], hint: '一个一个数' },
+      { id: 'd4', question: '苹果和橘子一共有几个？', answer: 6, dragItems: [{ id: 'apple', emoji: '[A]', count: 3 }, { id: 'orange', emoji: '[O]', count: 3 }], hint: '先数苹果，再数橘子' },
+      { id: 'd5', question: '兔子和小猫一共有几只？', answer: 7, dragItems: [{ id: 'rabbit', emoji: '[R]', count: 4 }, { id: 'cat', emoji: '[C]', count: 3 }], hint: '加在一起数' },
     ]
   },
   {
@@ -109,7 +109,7 @@ export const mathLessons: MathLesson[] = [
     id: 'shape-1',
     title: '图形乐园',
     type: 'shape',
-    icon: '🔷',
+    icon: '♦',
     description: '认识有趣的图形朋友',
     gameMode: 'shape',
     items: [
@@ -123,7 +123,7 @@ export const mathLessons: MathLesson[] = [
     id: 'time-1',
     title: '时间小达人',
     type: 'time',
-    icon: '🕐',
+    icon: '1',
     description: '认识钟表，做时间的小主人',
     gameMode: 'choice',
     items: [

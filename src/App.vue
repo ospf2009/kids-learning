@@ -1,38 +1,47 @@
-<script setup lang="ts">
-import { RouterView, useRoute } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import { onMounted } from 'vue'
-
-const route = useRoute()
-const userStore = useUserStore()
-
-onMounted(() => {
-  userStore.loadFromLocalStorage()
-  userStore.initDailyTasks()
-})
-</script>
-
 <template>
   <div class="app-container">
     <!-- 背景装饰 -->
     <div class="bg-decoration">
-      <div class="cloud cloud-1">☁️</div>
-      <div class="cloud cloud-2">☁️</div>
-      <div class="star star-1">⭐</div>
-      <div class="star star-2">✨</div>
-      <div class="star star-3">⭐</div>
+      <div class="cloud cloud-1">☁</div>
+      <div class="cloud cloud-2">☁</div>
+      <div class="star star-1">★</div>
+      <div class="star star-2">★</div>
+      <div class="star star-3">★</div>
     </div>
 
     <!-- 主内容 -->
     <main class="main-content">
-      <RouterView v-slot="{ Component }">
+      <router-view v-slot="{ Component }">
         <transition name="page" mode="out-in">
           <component :is="Component" />
         </transition>
-      </RouterView>
+      </router-view>
     </main>
   </div>
 </template>
+
+<script setup lang="ts">
+import { useUserStore } from '@/stores/user'
+import { useAuthStore } from '@/stores/auth'
+import { useProgressStore } from '@/stores/progress'
+import { onMounted } from 'vue'
+
+const userStore = useUserStore()
+const authStore = useAuthStore()
+const progressStore = useProgressStore()
+
+onMounted(async () => {
+  try {
+    await authStore.restoreSession()
+    userStore.loadFromLocalStorage()
+    userStore.initDailyTasks()
+    await progressStore.loadUserData()
+  } catch (e) {
+    window.__kidsErrors = window.__kidsErrors || []
+    window.__kidsErrors.push({ msg: '[App mount] ' + (e instanceof Error ? e.message : String(e)) })
+  }
+})
+</script>
 
 <style scoped>
 .app-container {

@@ -106,13 +106,13 @@ function retryLesson() {
       <span class="progress-text">{{ currentIndex + 1 }}/{{ lesson?.items.length }}</span>
     </div>
 
-    <div class="combo" v-if="gameStore.combo >= 2">🔥 {{ gameStore.combo }} 连击！</div>
+    <div class="combo" v-if="gameStore.combo >= 2">* {{ gameStore.combo }} 连击！</div>
 
     <!-- 选择题模式 -->
     <div class="question-area" v-if="lesson?.gameMode === 'choice' && currentItem && !showCompletion">
       <div class="question-card">
         <div class="question-chinese">{{ currentItem.chinese }}</div>
-        <div class="question-hint" v-if="currentItem.hint">💡 {{ currentItem.hint }}</div>
+        <div class="question-hint" v-if="currentItem.hint">! {{ currentItem.hint }}</div>
         <h2 class="question-text">{{ currentItem.content }}</h2>
       </div>
       <div class="options-grid">
@@ -132,12 +132,12 @@ function retryLesson() {
         </button>
       </div>
       <div class="result-feedback" v-if="showResult">
-        <div class="feedback-icon">{{ isCorrect ? '🎉' : '😊' }}</div>
+        <div class="feedback-icon">{{ isCorrect ? ':)' : ':)' }}</div>
         <div class="feedback-text">
           {{ isCorrect ? 'Great! 太棒了！' : '加油哦！正确答案是 ' + currentItem?.answer }}
         </div>
         <button class="btn btn-primary next-btn" @click="nextQuestion">
-          {{ currentIndex < (lesson?.items.length || 0) - 1 ? 'Next →' : '查看成绩 🏆' }}
+          {{ currentIndex < (lesson?.items.length || 0) - 1 ? 'Next ->' : '查看成绩 C' }}
         </button>
       </div>
     </div>
@@ -153,7 +153,7 @@ function retryLesson() {
       />
       <div class="next-section" v-if="showResult">
         <button class="btn btn-primary" @click="nextQuestion">
-          {{ currentIndex < (lesson?.items.length || 0) - 1 ? 'Next →' : '查看成绩 🏆' }}
+          {{ currentIndex < (lesson?.items.length || 0) - 1 ? 'Next ->' : '查看成绩 C' }}
         </button>
       </div>
     </div>
@@ -166,7 +166,7 @@ function retryLesson() {
       />
       <div class="next-section" v-if="showResult">
         <button class="btn btn-primary" @click="nextQuestion">
-          {{ currentIndex < (lesson?.items.length || 0) - 1 ? 'Next →' : '查看成绩 🏆' }}
+          {{ currentIndex < (lesson?.items.length || 0) - 1 ? 'Next ->' : '查看成绩 C' }}
         </button>
       </div>
     </div>
@@ -174,9 +174,9 @@ function retryLesson() {
     <!-- 儿歌模式 -->
     <div class="question-area" v-if="lesson?.gameMode === 'song' && currentItem && !showCompletion">
       <div class="question-card song-card">
-        <div class="song-icon">🎵</div>
+        <div class="song-icon">📝</div>
         <div class="question-chinese">{{ currentItem.chinese }}</div>
-        <div class="question-hint" v-if="currentItem.hint">💡 {{ currentItem.hint }}</div>
+        <div class="question-hint" v-if="currentItem.hint">! {{ currentItem.hint }}</div>
         <h2 class="question-text">{{ currentItem.content }}</h2>
       </div>
       <div class="options-grid">
@@ -196,12 +196,12 @@ function retryLesson() {
         </button>
       </div>
       <div class="result-feedback" v-if="showResult">
-        <div class="feedback-icon">{{ isCorrect ? '🎉' : '😊' }}</div>
+        <div class="feedback-icon">{{ isCorrect ? ':)' : ':)' }}</div>
         <div class="feedback-text">
           {{ isCorrect ? 'Sing along! 唱得真好！' : '正确答案是：' + currentItem?.answer }}
         </div>
         <button class="btn btn-primary next-btn" @click="nextQuestion">
-          {{ currentIndex < (lesson?.items.length || 0) - 1 ? 'Next →' : '查看成绩 🏆' }}
+          {{ currentIndex < (lesson?.items.length || 0) - 1 ? 'Next ->' : '查看成绩 C' }}
         </button>
       </div>
     </div>
@@ -212,14 +212,14 @@ function retryLesson() {
         <div class="trophy">🏆</div>
         <h2>练习完成！</h2>
         <div class="stats">
-          <div class="stat-item"><div class="stat-value">{{ gameStore.totalQuestions }}</div><div class="stat-label">总题数</div></div>
-          <div class="stat-item"><div class="stat-value correct">{{ gameStore.correctAnswers }}</div><div class="stat-label">答对</div></div>
-          <div class="stat-item"><div class="stat-value">{{ gameStore.accuracy }}%</div><div class="stat-label">正确率</div></div>
+          <div class="stat-item"><div class="stat-value">{{ gameStore.totalQuestions }}</div><div class="stat-label">📝 总题数</div></div>
+          <div class="stat-item"><div class="stat-value correct">{{ gameStore.correctAnswers }}</div><div class="stat-label">✅ 答对</div></div>
+          <div class="stat-item"><div class="stat-value">{{ gameStore.accuracy }}%</div><div class="stat-label">🎯 正确率</div></div>
         </div>
-        <div class="stars-earned">获得 ⭐ {{ gameStore.correctAnswers * 2 + (gameStore.totalQuestions - gameStore.correctAnswers) }} 颗星星</div>
+        <div class="stars-earned">获得 * {{ gameStore.correctAnswers * 2 + (gameStore.totalQuestions - gameStore.correctAnswers) }} 颗星星</div>
         <div class="completion-actions">
-          <button class="btn btn-secondary" @click="retryLesson">再来一次 🔄</button>
-          <button class="btn btn-primary" @click="goBack">返回列表 🔤</button>
+          <button class="btn btn-secondary" @click="retryLesson">再来一次 <></button>
+          <button class="btn btn-primary" @click="goBack">← 返回列表</button>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-// 📖 语文学习数据 - 一年级下册
+// [书] 语文学习数据 - 一年级下册
 export interface ChineseLesson {
   id: string
   title: string
@@ -27,7 +27,7 @@ export const chineseLessons: ChineseLesson[] = [
     id: 'pinyin-1',
     title: '拼音大冒险',
     type: 'pinyin',
-    icon: '🔤',
+    icon: '[英]',
     description: '声母韵母手拉手，拼出好听的音节',
     gameMode: 'choice',
     items: [
@@ -42,7 +42,7 @@ export const chineseLessons: ChineseLesson[] = [
     id: 'pinyin-bubble',
     title: '拼音泡泡龙',
     type: 'pinyinBubble',
-    icon: '🫧',
+    icon: 'O',
     description: '点击正确的拼音泡泡，消灭它们',
     gameMode: 'bubble',
     items: [
@@ -57,7 +57,7 @@ export const chineseLessons: ChineseLesson[] = [
     id: 'char-1',
     title: '汉字小画家',
     type: 'character',
-    icon: '✏️',
+    icon: 'P',
     description: '认识新朋友，写出漂亮的汉字',
     gameMode: 'choice',
     items: [
@@ -72,7 +72,7 @@ export const chineseLessons: ChineseLesson[] = [
     id: 'stroke-1',
     title: '笔顺小老师',
     type: 'strokeOrder',
-    icon: '✍️',
+    icon: 'W️',
     description: '跟着动画学写汉字笔顺',
     gameMode: 'stroke',
     items: [
@@ -87,7 +87,7 @@ export const chineseLessons: ChineseLesson[] = [
     id: 'poem-1',
     title: '古诗花园',
     type: 'poem',
-    icon: '🌸',
+    icon: '',
     description: '读好听的古诗，感受美丽的意境',
     gameMode: 'poem',
     items: [
@@ -117,7 +117,7 @@ export const chineseLessons: ChineseLesson[] = [
     id: 'reading-1',
     title: '故事王国',
     type: 'reading',
-    icon: '📚',
+    icon: 'B',
     description: '读有趣的故事，回答好玩的问题',
     gameMode: 'choice',
     items: [

@@ -96,14 +96,14 @@ function nextStroke() {
       <div class="stroke-name">{{ strokes[currentStroke] }}</div>
     </div>
 
-    <div class="hint" v-if="hint">💡 {{ hint }}</div>
+    <div class="hint" v-if="hint">! {{ hint }}</div>
 
     <button class="btn btn-primary next-btn" @click="nextStroke">
-      {{ currentStroke < strokes.length - 1 ? '下一笔 →' : '完成 ✨' }}
+      {{ currentStroke < strokes.length - 1 ? '下一笔 ->' : '完成 *' }}
     </button>
 
     <div class="result" v-if="showResult">
-      <div class="result-icon">🎉</div>
+      <div class="result-icon">:)</div>
       <div class="result-text">太棒了！学会了 {{ character }} 的笔顺</div>
     </div>
   </div>

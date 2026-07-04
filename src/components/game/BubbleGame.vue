@@ -80,13 +80,13 @@ function popBubble(bubble: typeof bubbles.value[0]) {
         @click="popBubble(bubble)"
       >
         <span v-if="!bubble.popped">{{ bubble.text }}</span>
-        <span v-else-if="bubble.isCorrect">✅</span>
-        <span v-else>❌</span>
+        <span v-else-if="bubble.isCorrect" class="icon">✔</span>
+        <span v-else class="icon">✘</span>
       </div>
     </div>
 
     <div class="result" v-if="isFinished">
-      <div class="result-icon">{{ isCorrect ? '🎉' : '😊' }}</div>
+      <div class="result-icon">{{ isCorrect ? ':)' : ':)' }}</div>
       <div class="result-text">{{ isCorrect ? '太棒了！' : '正确答案是：' + correctAnswer }}</div>
     </div>
   </div>

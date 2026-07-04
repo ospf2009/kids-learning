@@ -116,7 +116,7 @@ function checkMatch() {
 
     <!-- 完成提示 -->
     <div class="result" v-if="isComplete">
-      <div class="result-icon">🎉</div>
+      <div class="result-icon">:)</div>
       <div class="result-text">全部配对成功！</div>
     </div>
   </div>

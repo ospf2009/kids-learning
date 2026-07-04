@@ -1,4 +1,4 @@
-// 🔤 英语学习数据 - 一年级下册
+// [英] 英语学习数据 - 一年级下册
 export interface EnglishLesson {
   id: string
   title: string
@@ -50,43 +50,43 @@ export const englishLessons: EnglishLesson[] = [
     description: '打开魔法箱，发现新单词',
     gameMode: 'choice',
     items: [
-      { id: 'w1', content: '🍎 这是什么？', chinese: '苹果', answer: 'apple', options: ['apple', 'banana', 'orange', 'grape'], hint: '红色的，圆圆的水果' },
-      { id: 'w2', content: '🐱 这是什么？', chinese: '猫咪', answer: 'cat', options: ['cat', 'dog', 'bird', 'fish'], hint: '喵喵叫的小动物' },
-      { id: 'w3', content: '🐶 这是什么？', chinese: '小狗', answer: 'dog', options: ['dog', 'cat', 'pig', 'duck'], hint: '汪汪叫的小动物' },
-      { id: 'w4', content: '☀️ 这是什么？', chinese: '太阳', answer: 'sun', options: ['sun', 'moon', 'star', 'cloud'], hint: '白天出来，暖暖的' },
-      { id: 'w5', content: '🌙 这是什么？', chinese: '月亮', answer: 'moon', options: ['moon', 'sun', 'star', 'sky'], hint: '晚上出来，弯弯的' },
+      { id: 'w1', content: '[A] 这是什么？', chinese: '苹果', answer: 'apple', options: ['apple', 'banana', 'orange', 'grape'], hint: '红色的，圆圆的水果' },
+      { id: 'w2', content: '[C] 这是什么？', chinese: '猫咪', answer: 'cat', options: ['cat', 'dog', 'bird', 'fish'], hint: '喵喵叫的小动物' },
+      { id: 'w3', content: '[D] 这是什么？', chinese: '小狗', answer: 'dog', options: ['dog', 'cat', 'pig', 'duck'], hint: '汪汪叫的小动物' },
+      { id: 'w4', content: 'S️ 这是什么？', chinese: '太阳', answer: 'sun', options: ['sun', 'moon', 'star', 'cloud'], hint: '白天出来，暖暖的' },
+      { id: 'w5', content: 'M 这是什么？', chinese: '月亮', answer: 'moon', options: ['moon', 'sun', 'star', 'sky'], hint: '晚上出来，弯弯的' },
     ]
   },
   {
     id: 'word-bubble',
     title: '单词泡泡龙',
     type: 'bubble',
-    icon: '🫧',
+    icon: 'O',
     description: '点击正确的英文单词泡泡',
     gameMode: 'bubble',
     items: [
-      { id: 'wb1', content: '🍎 苹果', chinese: '苹果', answer: 'apple', options: ['apple', 'appel', 'aple', 'appl', 'abple', 'aplle'], hint: 'a-p-p-l-e' },
-      { id: 'wb2', content: '🐱 猫咪', chinese: '猫咪', answer: 'cat', options: ['cat', 'cta', 'act', 'catt', 'kat', 'caat'], hint: 'c-a-t' },
-      { id: 'wb3', content: '🐶 小狗', chinese: '小狗', answer: 'dog', options: ['dog', 'dgo', 'god', 'doge', 'doog', 'dgog'], hint: 'd-o-g' },
-      { id: 'wb4', content: '🐟 鱼', chinese: '鱼', answer: 'fish', options: ['fish', 'fsh', 'fih', 'fihs', 'fissh', 'phish'], hint: 'f-i-s-h' },
-      { id: 'wb5', content: '🐦 小鸟', chinese: '小鸟', answer: 'bird', options: ['bird', 'brd', 'bire', 'biid', 'birdd', 'bired'], hint: 'b-i-r-d' },
+      { id: 'wb1', content: '[A] 苹果', chinese: '苹果', answer: 'apple', options: ['apple', 'appel', 'aple', 'appl', 'abple', 'aplle'], hint: 'a-p-p-l-e' },
+      { id: 'wb2', content: '[C] 猫咪', chinese: '猫咪', answer: 'cat', options: ['cat', 'cta', 'act', 'catt', 'kat', 'caat'], hint: 'c-a-t' },
+      { id: 'wb3', content: '[D] 小狗', chinese: '小狗', answer: 'dog', options: ['dog', 'dgo', 'god', 'doge', 'doog', 'dgog'], hint: 'd-o-g' },
+      { id: 'wb4', content: '[F] 鱼', chinese: '鱼', answer: 'fish', options: ['fish', 'fsh', 'fih', 'fihs', 'fissh', 'phish'], hint: 'f-i-s-h' },
+      { id: 'wb5', content: '[B] 小鸟', chinese: '小鸟', answer: 'bird', options: ['bird', 'brd', 'bire', 'biid', 'birdd', 'bired'], hint: 'b-i-r-d' },
     ]
   },
   {
     id: 'color-1',
     title: '颜色万花筒',
     type: 'word',
-    icon: '🌈',
+    icon: '～',
     description: '五颜六色的颜色单词',
     gameMode: 'match',
     items: [
       {
         id: 'cl1', content: '配对颜色', chinese: '颜色配对', answer: 'match',
         matchPairs: [
-          { id: 'm1', english: 'red', chinese: '红色', emoji: '🔴' },
-          { id: 'm2', english: 'blue', chinese: '蓝色', emoji: '🔵' },
-          { id: 'm3', english: 'green', chinese: '绿色', emoji: '🟢' },
-          { id: 'm4', english: 'yellow', chinese: '黄色', emoji: '🟡' },
+          { id: 'm1', english: 'red', chinese: '红色', emoji: '[R]' },
+          { id: 'm2', english: 'blue', chinese: '蓝色', emoji: '[B]' },
+          { id: 'm3', english: 'green', chinese: '绿色', emoji: '[G]' },
+          { id: 'm4', english: 'yellow', chinese: '黄色', emoji: '[Y]' },
         ]
       },
     ]
@@ -95,7 +95,7 @@ export const englishLessons: EnglishLesson[] = [
     id: 'phrase-1',
     title: '礼貌小达人',
     type: 'phrase',
-    icon: '🤝',
+    icon: '=',
     description: '学会说礼貌用语',
     gameMode: 'choice',
     items: [
@@ -109,7 +109,7 @@ export const englishLessons: EnglishLesson[] = [
     id: 'song-1',
     title: '儿歌欢唱',
     type: 'song',
-    icon: '🎵',
+    icon: '~',
     description: '唱好听的英文儿歌',
     gameMode: 'song',
     items: [

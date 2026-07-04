@@ -64,9 +64,9 @@ export const useUserStore = defineStore('user', () => {
     if (lastStudyDate.value === today && dailyTasks.value.length > 0) return
 
     dailyTasks.value = [
-      { id: 'daily-chinese', subject: 'chinese', title: '语文练习', icon: '📖', total: 5, completed: 0, isCompleted: false },
-      { id: 'daily-math', subject: 'math', title: '数学练习', icon: '🔢', total: 5, completed: 0, isCompleted: false },
-      { id: 'daily-english', subject: 'english', title: '英语练习', icon: '🔤', total: 5, completed: 0, isCompleted: false },
+      { id: 'daily-chinese', subject: 'chinese', title: '语文练习', icon: '[书]', total: 5, completed: 0, isCompleted: false },
+      { id: 'daily-math', subject: 'math', title: '数学练习', icon: '[数]', total: 5, completed: 0, isCompleted: false },
+      { id: 'daily-english', subject: 'english', title: '英语练习', icon: '[英]', total: 5, completed: 0, isCompleted: false },
     ]
 
     // 检查连续学习

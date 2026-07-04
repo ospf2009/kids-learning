@@ -13,9 +13,9 @@ function handleComplete(score: number) {
 }
 
 const games = [
-  { id: 'catch-stars', name: '接星星', icon: '🌟', desc: '接住星星避开炸弹', color: '#FF6B6B' },
-  { id: 'coming-soon', name: '贪吃蛇', icon: '🐍', desc: '即将推出', color: '#4ECDC4' },
-  { id: 'coming-soon-2', name: '打地鼠', icon: '🔨', desc: '即将推出', color: '#60A5FA' },
+  { id: 'catch-stars', name: '接星星', icon: '*', desc: '接住星星避开炸弹', color: '#FF6B6B' },
+  { id: 'coming-soon', name: '贪吃蛇', icon: '[S]', desc: '即将推出', color: '#4ECDC4' },
+  { id: 'coming-soon-2', name: '打地鼠', icon: '[H]', desc: '即将推出', color: '#60A5FA' },
 ]
 </script>
 

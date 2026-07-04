@@ -85,8 +85,8 @@ function finishGame() {
       <div class="timer" :class="{ urgent: timeLeft <= 10 }">
         ⏰ {{ timeLeft }}s
       </div>
-      <div class="score">⭐ {{ score }}</div>
-      <div class="combo" v-if="combo >= 2">🔥 {{ combo }}连击</div>
+      <div class="score">* {{ score }}</div>
+      <div class="combo" v-if="combo >= 2">* {{ combo }}连击</div>
     </div>
 
     <!-- 进度条 -->
@@ -122,10 +122,10 @@ function finishGame() {
     <div class="result-overlay" v-if="isFinished">
       <div class="result-card">
         <div class="trophy">🏆</div>
-        <h2>时间到！</h2>
+        <h2>⏰ 时间到！</h2>
         <div class="stats">
-          <div class="stat"><div class="stat-value">{{ correctCount }}</div><div class="stat-label">答对</div></div>
-          <div class="stat"><div class="stat-value">{{ score }}</div><div class="stat-label">得分</div></div>
+          <div class="stat"><div class="stat-value">{{ correctCount }}</div><div class="stat-label">✅ 答对</div></div>
+          <div class="stat"><div class="stat-value">{{ score }}</div><div class="stat-label">⭐ 得分</div></div>
         </div>
       </div>
     </div>

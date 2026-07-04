@@ -50,7 +50,7 @@ function nextLine() {
 <template>
   <div class="poem-display">
     <div class="poem-card">
-      <div class="poem-title">📜 {{ title }}</div>
+      <div class="poem-title">S {{ title }}</div>
       
       <!-- 逐行显示诗句 -->
       <div class="poem-lines">
@@ -70,14 +70,14 @@ function nextLine() {
         class="btn btn-accent next-line-btn"
         @click="nextLine"
       >
-        下一句 →
+        下一句 ->
       </button>
     </div>
 
     <!-- 作者问答 -->
     <div class="author-question">
       <div class="question-text">这首诗是谁写的？</div>
-      <div class="hint" v-if="hint">💡 {{ hint }}</div>
+      <div class="hint" v-if="hint">! {{ hint }}</div>
       
       <div class="options-grid">
         <button
@@ -98,7 +98,7 @@ function nextLine() {
     </div>
 
     <div class="result" v-if="showResult">
-      <div class="result-icon">{{ isCorrect ? '🎉' : '😊' }}</div>
+      <div class="result-icon">{{ isCorrect ? ':)' : ':)' }}</div>
       <div class="result-text">
         {{ isCorrect ? '太棒了！' : '正确答案是：' + correctAnswer }}
       </div>

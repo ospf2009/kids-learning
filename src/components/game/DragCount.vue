@@ -75,7 +75,7 @@ function checkAnswer() {
 <template>
   <div class="drag-count">
     <div class="question">{{ question }}</div>
-    <div class="hint" v-if="hint">💡 {{ hint }}</div>
+    <div class="hint" v-if="hint">! {{ hint }}</div>
 
     <!-- 可点击的物品 -->
     <div class="items-area">
@@ -108,7 +108,7 @@ function checkAnswer() {
 
     <!-- 结果 -->
     <div class="result" v-if="showResult">
-      <div class="result-icon">{{ isCorrect ? '🎉' : '😊' }}</div>
+      <div class="result-icon">{{ isCorrect ? ':)' : ':)' }}</div>
       <div class="result-text">
         {{ isCorrect ? '太棒了！数对了！' : '正确答案是 ' + correctAnswer + ' 个' }}
       </div>

@@ -61,7 +61,7 @@ function selectAnswer(option: string) {
 <template>
   <div class="shape-game">
     <div class="question">{{ question }}</div>
-    <div class="hint" v-if="hint">💡 {{ hint }}</div>
+    <div class="hint" v-if="hint">! {{ hint }}</div>
 
     <!-- 图形展示 -->
     <div class="shape-display">
@@ -91,7 +91,7 @@ function selectAnswer(option: string) {
 
     <!-- 结果 -->
     <div class="result" v-if="showResult">
-      <div class="result-icon">{{ isCorrect ? '🎉' : '😊' }}</div>
+      <div class="result-icon">{{ isCorrect ? ':)' : ':)' }}</div>
       <div class="result-text">
         {{ isCorrect ? '太棒了！' : '正确答案是：' + correctAnswer }}
       </div>
