@@ -56,12 +56,12 @@ const games = [
 .back-btn { background: var(--bg-card); border: 2px solid #EEE; border-radius: var(--radius-full); padding: 8px 16px; font-family: var(--font-family); font-size: var(--font-size-sm); cursor: pointer; transition: all var(--transition-normal); }
 .back-btn:hover { background: #FFF0F0; border-color: var(--color-primary); }
 .page-header h1 { font-size: var(--font-size-2xl); }
-.games-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-md); }
-.game-card { background: var(--bg-card); border-radius: var(--radius-lg); padding: var(--space-lg); text-align: center; cursor: pointer; transition: all var(--transition-normal) var(--bounce); box-shadow: var(--shadow-sm); border: 3px solid transparent; }
-.game-card:hover:not(.disabled) { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--game-color); }
+.games-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.game-card { background: var(--bg-card); border-radius: 14px; padding: 16px 8px; text-align: center; cursor: pointer; transition: all var(--transition-normal) var(--bounce); box-shadow: var(--shadow-sm); border: 3px solid transparent; }
+.game-card:hover:not(.disabled) { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--game-color); }
 .game-card.disabled { opacity: 0.5; cursor: not-allowed; }
-.game-icon { font-size: 40px; margin-bottom: 8px; }
-.game-name { font-size: var(--font-size-lg); font-weight: 700; margin-bottom: 4px; }
-.game-desc { font-size: var(--font-size-xs); color: var(--text-secondary); }
+.game-icon { font-size: 32px; margin-bottom: 4px; line-height: 1.2; }
+.game-name { font-size: 15px; font-weight: 700; white-space: nowrap; }
+.game-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
 .game-play { margin-top: var(--space-md); }
 </style>

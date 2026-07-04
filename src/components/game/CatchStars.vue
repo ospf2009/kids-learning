@@ -18,6 +18,7 @@ const score = ref(0)
 const lives = ref(3)
 const isPlaying = ref(false)
 const isGameOver = ref(false)
+const startTime = ref(0)  // 游戏开始时间戳
 
 // 改用纯绘制数据，不用 emoji
 const stars = ref<Array<{ x: number; y: number; speed: number }>>([])
@@ -39,24 +40,29 @@ function startGame() {
   bombs.value = []
   isPlaying.value = true
   isGameOver.value = false
+  startTime.value = Date.now()
 
   // 每1.2秒生成一个星星
   starTimer = setInterval(() => {
     if (!isPlaying.value) return
+    const elapsed = (Date.now() - startTime.value) / 1000  // 已过秒数
+    const speedBoost = 1 + Math.floor(elapsed / 15) * 0.5  // 每15秒加速0.5
     stars.value.push({
       x: Math.random() * (gameWidth - starSize * 2) + starSize,
       y: -starSize,
-      speed: 1.5 + Math.random() * 1.5
+      speed: (1.5 + Math.random() * 1.5) * speedBoost
     })
   }, 1200)
 
   // 每2.5秒生成一个炸弹
   bombTimer = setInterval(() => {
     if (!isPlaying.value) return
+    const elapsed = (Date.now() - startTime.value) / 1000
+    const speedBoost = 1 + Math.floor(elapsed / 15) * 0.5
     bombs.value.push({
       x: Math.random() * (gameWidth - starSize * 2) + starSize,
       y: -starSize,
-      speed: 2 + Math.random() * 1
+      speed: (2 + Math.random() * 1) * speedBoost
     })
   }, 2500)
 
@@ -416,24 +422,26 @@ canvas {
 .overlay-content {
   text-align: center;
   color: white;
+  padding: 8px;
 }
 .big-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
+  font-size: 48px;
+  margin-bottom: 8px;
 }
 .overlay-content h2 {
-  font-size: 28px;
-  margin-bottom: 12px;
+  font-size: 22px;
+  margin-bottom: 6px;
 }
 .overlay-content p {
-  font-size: 16px;
-  margin-bottom: 24px;
+  font-size: 14px;
+  margin-bottom: 14px;
   opacity: 0.8;
+  line-height: 1.4;
 }
 .final-score {
-  font-size: 36px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--color-accent);
-  margin-bottom: 24px;
+  margin-bottom: 14px;
 }
 </style>
