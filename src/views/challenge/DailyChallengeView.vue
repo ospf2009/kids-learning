@@ -25,6 +25,50 @@ function shuffleArray<T>(arr: T[]): T[] {
   return a
 }
 
+function getFillOptions(answer: string): string[] {
+  // 根据答案类型选择干扰项池
+  function guessPool(ans: string): string[] {
+    if (/^\d+$/.test(ans)) {
+      return ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+              '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20']
+    }
+    if (/^[\u4e00-\u9fff]+$/.test(ans)) {
+      return ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十',
+              '上', '下', '左', '右', '大', '小', '多', '少',
+              '天', '地', '人', '口', '手', '足', '日', '月', '水', '火',
+              '木', '金', '土', '山', '石', '田', '飞', '虫', '鸟',
+              '春', '夏', '秋', '冬', '风', '雪', '花', '草', '果', '叶',
+              '米', '厘', '元', '角', '分',
+              '对', '错', '出', '入', '来', '去',
+              '晴', '清', '请', '睛', '保', '护',
+              '我', '你', '他', '她', '它', '们',
+              '东', '西', '南', '北', '前', '后']
+    }
+    if (/^[a-zA-Z]+$/.test(ans)) {
+      return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+              'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+              'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
+              'Good', 'Hello', 'my', 'Thank']
+    }
+    return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+            'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+  }
+
+  const pool = guessPool(answer)
+  const opts = new Set<string>()
+  opts.add(answer)
+
+  const noise = pool.filter(p => p !== answer)
+  const shuffled = shuffleArray(noise)
+  const needed = Math.min(5, Math.max(3, 6 - opts.size))
+
+  for (let i = 0; i < needed && i < shuffled.length; i++) {
+    opts.add(shuffled[i]!)
+  }
+
+  return shuffleArray(Array.from(opts))
+}
+
 function generateDailyChallenge() {
   correctCount.value = 0
   currentIndex.value = 0
@@ -151,7 +195,7 @@ function goBack() { router.push('/') }
       <div v-if="currentQuestion.type === 'fill'" class="fill-area">
         <div class="fill-options">
           <button
-            v-for="opt in (currentQuestion.options || ['a','e','i','o','u','b'].slice(0,6))"
+            v-for="opt in getFillOptions(currentQuestion.answer)"
             :key="opt"
             class="option-btn"
             :class="{
