@@ -77,10 +77,10 @@ async function selectAnswer(answer: string) {
         q.options || [],
         isCorrect.value
       )
-      // 答对时，自动将该题从错题本中移除
+      // 答对时，移除未复习的错题（已标记复习的保留记录）
       if (isCorrect.value) {
         const wrongs = await wrongDB.getByUserChapter(authStore.currentUser.id, chapterId)
-        const matched = wrongs.find(w => w.questionId === q.id)
+        const matched = wrongs.find(w => w.questionId === q.id && !w.retried)
         if (matched) {
           await wrongDB.remove(matched.id)
         }

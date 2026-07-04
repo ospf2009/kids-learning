@@ -135,10 +135,10 @@ function selectAnswer(answer: string) {
       q.options || [],
       isCorrect.value
     ).then(() => {
-      // 答对时自动从错题本移除
+      // 答对时自动移除未复习的错题
       if (isCorrect.value && authStore.currentUser) {
         wrongDB.getByUserChapter(authStore.currentUser.id, 'daily-challenge').then(wrongs => {
-          const matched = wrongs.find(w => w.questionId === q.id)
+          const matched = wrongs.find(w => w.questionId === q.id && !w.retried)
           if (matched) wrongDB.remove(matched.id)
         }).catch(() => {})
       }

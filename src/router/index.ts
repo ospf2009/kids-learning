@@ -48,6 +48,13 @@ const router = createRouter({
       component: () => import('@/views/wrongbook/WrongBookView.vue'),
       meta: { requiresAuth: true },
     },
+    // 错题复习
+    {
+      path: '/wrong-book/review',
+      name: 'wrong-book-review',
+      component: () => import('@/views/wrongbook/WrongBookReview.vue'),
+      meta: { requiresAuth: true },
+    },
     // 每日挑战
     {
       path: '/daily-challenge',
