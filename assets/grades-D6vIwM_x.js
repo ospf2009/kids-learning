@@ -1,0 +1,1 @@
+var e=[{id:`grade1-up`,name:`一年级上册`,label:`一年级上`},{id:`grade1-down`,name:`一年级下册`,label:`一年级下`},{id:`grade2-up`,name:`二年级上册`,label:`二年级上`},{id:`grade2-down`,name:`二年级下册`,label:`二年级下`}];function t(t){return e.find(e=>e.id===t)}function n(e){return t(e)?.name||`未知年级`}export{e as n,n as t};
