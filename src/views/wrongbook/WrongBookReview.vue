@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { wrongDB, type DBWrongQuestion } from '@/db'
 import { playCorrectSound, playWrongSound, speakCorrect, speakWrong, playVictorySound } from '@/utils/sound'
 import { useUserStore } from '@/stores/user'
+import { getChapter, type GradeId, type Subject } from '@/data/chapters'
 
 const router = useRouter()
 const route = useRoute()
@@ -13,8 +14,8 @@ const userStore = useUserStore()
 
 const subjectNames: Record<string, string> = { chinese: '语文', math: '数学', english: '英语' }
 
-// 从路由参数获取错题数据
-const initialData = route.params.wrongData
+// 从路由 query 获取错题数据
+const initialData = route.query.data as string | undefined
 let wrongList: DBWrongQuestion[] = []
 
 try {
@@ -90,6 +91,11 @@ function nextQuestion() {
 function goBack() { router.push('/wrong-book') }
 function goWrongBook() { router.push('/wrong-book') }
 
+function getChapterName(q: DBWrongQuestion): string {
+  const chapter = getChapter(q.gradeId as GradeId, q.subject as Subject, q.chapterId)
+  return chapter?.title || q.chapterId
+}
+
 const progress = () => {
   if (totalReview.value === 0) return 0
   return Math.round((currentIndex.value / totalReview.value) * 100)
@@ -119,7 +125,7 @@ const progress = () => {
     <div v-if="currentWrong && !showCompletion" class="question-area">
       <div class="wrong-info">
         <span class="wi-badge" :class="'wi-' + currentWrong.subject">{{ subjectNames[currentWrong.subject] || currentWrong.subject }}</span>
-        <span class="wi-chapter">第{{ currentWrong.chapterId }}章</span>
+        <span class="wi-chapter">{{ getChapterName(currentWrong) }}</span>
       </div>
 
       <div class="question-card">

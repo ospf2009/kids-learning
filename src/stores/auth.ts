@@ -1,14 +1,46 @@
 /**
  * 认证状态管理
- * 纯前端，IndexedDB 存储
+ * 注册/登录/用户信息走 API，updateGrade/updateAvatar 同时写 API 和 localStorage
  */
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { userDB, hashPassword, generateId, type DBUser } from '@/db'
+import { api, type ApiUser } from '@/utils/api'
+
+/** 前端用户数据类型（兼容 API 返回的下划线命名） */
+export interface FrontUser {
+  id: string
+  username: string
+  grade: string
+  avatar: string
+  stars: number
+  streak: number
+  lastStudyDate: string
+  completedLessons: Record<string, string[]>
+  achievements: string[]
+  badges: string[]
+  createdAt: string
+}
+
+/** 将 API 返回的 user 转为前端格式 */
+function mapApiUser(apiUser: ApiUser): FrontUser {
+  return {
+    id: apiUser.id,
+    username: apiUser.username,
+    grade: apiUser.grade,
+    avatar: apiUser.avatar,
+    stars: apiUser.stars,
+    streak: apiUser.streak,
+    lastStudyDate: apiUser.last_study_date,
+    completedLessons: JSON.parse(apiUser.completed_lessons || '{}'),
+    achievements: JSON.parse(apiUser.achievements || '[]'),
+    badges: JSON.parse(apiUser.badges || '[]'),
+    createdAt: apiUser.created_at,
+  }
+}
 
 export const useAuthStore = defineStore('auth', () => {
-  const currentUser = ref<DBUser | null>(null)
+  const currentUser = ref<FrontUser | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
@@ -22,14 +54,8 @@ export const useAuthStore = defineStore('auth', () => {
     const savedUserId = localStorage.getItem('kids-learning-current-user')
     if (savedUserId) {
       try {
-        const user = await userDB.get(savedUserId)
-        if (user) {
-          // 深拷贝以剥离 IDB 返回的引用，防止 Vue proxy 污染
-          currentUser.value = JSON.parse(JSON.stringify(user))
-        } else {
-          // 用户数据已删除，清除 localStorage
-          localStorage.removeItem('kids-learning-current-user')
-        }
+        const { user } = await api.getUser(savedUserId)
+        currentUser.value = mapApiUser(user)
       } catch (e) {
         console.error('[auth] restoreSession failed:', e)
         localStorage.removeItem('kids-learning-current-user')
@@ -43,31 +69,13 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      // 检查用户名是否已存在
-      const existing = await userDB.getByUsername(username)
-      if (existing) {
-        error.value = '用户名已存在'
-        return false
-      }
-
-      // 创建用户
-      const passwordHash = await hashPassword(password)
-      const user: DBUser = {
-        id: generateId(),
-        username,
-        passwordHash,
-        grade,
-        avatar: 'S',
-        createdAt: new Date().toISOString(),
-      }
-
-      await userDB.add(user)
-      currentUser.value = user
+      const { user } = await api.register(username, password, grade)
+      currentUser.value = mapApiUser(user)
       localStorage.setItem('kids-learning-current-user', user.id)
       return true
-    } catch (e) {
+    } catch (e: any) {
       console.error('Register failed:', e)
-      error.value = '注册失败，请重试'
+      error.value = e.message || '注册失败，请重试'
       return false
     } finally {
       isLoading.value = false
@@ -80,24 +88,13 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      const user = await userDB.getByUsername(username)
-      if (!user) {
-        error.value = '用户名不存在'
-        return false
-      }
-
-      const passwordHash = await hashPassword(password)
-      if (user.passwordHash !== passwordHash) {
-        error.value = '密码错误'
-        return false
-      }
-
-      currentUser.value = user
+      const { user } = await api.login(username, password)
+      currentUser.value = mapApiUser(user)
       localStorage.setItem('kids-learning-current-user', user.id)
       return true
-    } catch (e) {
+    } catch (e: any) {
       console.error('Login failed:', e)
-      error.value = '登录失败，请重试'
+      error.value = e.message || '登录失败，请重试'
       return false
     } finally {
       isLoading.value = false
@@ -113,11 +110,9 @@ export const useAuthStore = defineStore('auth', () => {
   // 更新年级
   async function updateGrade(newGrade: string) {
     if (!currentUser.value) return
-    currentUser.value.grade = newGrade
     try {
-      const clone = JSON.parse(JSON.stringify(currentUser.value))
-      await userDB.put(clone)
-      localStorage.setItem('kids-learning-current-user', currentUser.value.id)
+      const { user } = await api.updateUser(currentUser.value.id, { grade: newGrade })
+      currentUser.value = mapApiUser(user)
     } catch (e) {
       console.error('[auth] updateGrade failed:', e)
     }
@@ -126,10 +121,9 @@ export const useAuthStore = defineStore('auth', () => {
   // 更新头像
   async function updateAvatar(newAvatar: string) {
     if (!currentUser.value) return
-    currentUser.value.avatar = newAvatar
     try {
-      const clone = JSON.parse(JSON.stringify(currentUser.value))
-      await userDB.put(clone)
+      const { user } = await api.updateUser(currentUser.value.id, { avatar: newAvatar })
+      currentUser.value = mapApiUser(user)
     } catch (e) {
       console.error('[auth] updateAvatar failed:', e)
     }

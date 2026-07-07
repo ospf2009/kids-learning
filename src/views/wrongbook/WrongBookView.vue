@@ -50,13 +50,13 @@ async function clearMastered() {
 function reviewWrong(q: DBWrongQuestion) {
   // 只跳转到复习页面，只传这一条错题
   const data = encodeURIComponent(JSON.stringify([q]))
-  router.push({ name: 'wrong-book-review', params: { wrongData: data } })
+  router.push({ name: 'wrong-book-review', query: { data } })
 }
 
 function reviewAllPending() {
   if (pendingItems.value.length === 0) return
   const data = encodeURIComponent(JSON.stringify(pendingItems.value))
-  router.push({ name: 'wrong-book-review', params: { wrongData: data } })
+  router.push({ name: 'wrong-book-review', query: { data } })
 }
 
 function formatDate(dateStr: string): string {

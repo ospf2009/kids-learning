@@ -6,6 +6,7 @@ import { useProgressStore } from '@/stores/progress'
 import { useUserStore } from '@/stores/user'
 import { getChapter, type GradeId, type Subject, type Question } from '@/data/chapters'
 import { getMixedQuestions } from '@/utils/questionGenerator'
+import { getOptionEmoji } from '@/utils/questionGenerator'
 import { wrongDB } from '@/db'
 import { playCorrectSound, playWrongSound, speakCorrect, speakWrong, playVictorySound } from '@/utils/sound'
 
@@ -23,7 +24,8 @@ const userGrade = computed<GradeId>(() => (authStore.grade || 'grade1-down') as 
 const chapterData = computed(() => getChapter(userGrade.value, subject.value, chapterId))
 const shuffledQuestions = computed(() => {
   if (!chapterData.value) return []
-  return getMixedQuestions(chapterData.value, subject.value, userGrade.value)
+  const all = getMixedQuestions(chapterData.value, subject.value, userGrade.value)
+  return all.slice(0, 10)
 })
 
 const currentIndex = ref(0)
@@ -219,7 +221,7 @@ function getFillOptions(q: Question): string[] {
           }"
           @click="selectAnswer(opt!)"
           :disabled="showResult"
-        >{{ opt }}</button>
+        ><span class="opt-emoji">{{ getOptionEmoji(opt!) }}</span>{{ opt }}</button>
       </div>
 
       <!-- 判断题 -->
@@ -235,7 +237,7 @@ function getFillOptions(q: Question): string[] {
           }"
           @click="selectAnswer(opt)"
           :disabled="showResult"
-        >{{ opt === '对' ? '✓ 对' : '✗ 错' }}</button>
+        >{{ opt === '对' ? '⭕ 对' : '❌ 错' }}</button>
       </div>
 
       <!-- 填空题 -->
@@ -252,7 +254,7 @@ function getFillOptions(q: Question): string[] {
             }"
             @click="selectAnswer(opt)"
             :disabled="showResult"
-          >{{ opt }}</button>
+          ><span class="opt-emoji">{{ getOptionEmoji(opt) }}</span>{{ opt }}</button>
         </div>
       </div>
 
@@ -324,6 +326,7 @@ function getFillOptions(q: Question): string[] {
 }
 .option-btn:hover:not(:disabled) { border-color: var(--color-primary); box-shadow: var(--shadow-md); transform: translateY(-1px); }
 .option-btn:disabled { cursor: default; }
+.opt-emoji { font-size: 22px; margin-right: 8px; vertical-align: middle; display: inline-block; }
 .option-btn.selected { border-color: var(--color-primary); background: #FFF5F5; }
 .option-btn.correct { border-color: var(--color-success); background: #F0FDF4; animation: popIn 0.3s; }
 .option-btn.wrong { border-color: var(--color-danger); background: #FEF2F2; }

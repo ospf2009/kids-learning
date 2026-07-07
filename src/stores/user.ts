@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { getCurrentLevel, getNextLevel, type Achievement } from '@/data/rewards'
+import { useAuthStore } from './auth'
+import { api } from '@/utils/api'
+import { getCurrentLevel, getNextLevel } from '@/data/rewards'
 
 export interface DailyTask {
   id: string
@@ -25,7 +27,6 @@ export interface UserState {
 }
 
 export const useUserStore = defineStore('user', () => {
-  // === 状态 ===
   const name = ref<string>('小朋友')
   const stars = ref<number>(0)
   const streak = ref<number>(0)
@@ -35,7 +36,6 @@ export const useUserStore = defineStore('user', () => {
   const badges = ref<string[]>([])
   const dailyTasks = ref<DailyTask[]>([])
 
-  // === 计算属性 ===
   const currentLevel = computed(() => getCurrentLevel(stars.value))
   const nextLevel = computed(() => getNextLevel(stars.value))
   const levelProgress = computed(() => {
@@ -58,7 +58,21 @@ export const useUserStore = defineStore('user', () => {
     return Math.round((todayCompleted.value / dailyTasks.value.length) * 100)
   })
 
-  // === 初始化每日任务 ===
+  // 从 API 同步用户数据到本地 store
+  async function syncFromApi() {
+    const auth = useAuthStore()
+    if (!auth.currentUser) return
+
+    const apiUser = auth.currentUser
+    stars.value = apiUser.stars
+    streak.value = apiUser.streak
+    lastStudyDate.value = apiUser.lastStudyDate
+    completedLessons.value = apiUser.completedLessons || {}
+    achievements.value = apiUser.achievements || []
+    badges.value = apiUser.badges || []
+  }
+
+  // 初始化每日任务
   function initDailyTasks() {
     const today = new Date().toISOString().split('T')[0]
     if (lastStudyDate.value === today && dailyTasks.value.length > 0) return
@@ -69,11 +83,10 @@ export const useUserStore = defineStore('user', () => {
       { id: 'daily-english', subject: 'english', title: '英语练习', icon: '[英]', total: 5, completed: 0, isCompleted: false },
     ]
 
-    // 检查连续学习
     const yesterday = new Date()
     yesterday.setDate(yesterday.getDate() - 1)
     const yesterdayStr = yesterday.toISOString().split('T')[0]
-    
+
     if (lastStudyDate.value === yesterdayStr) {
       // 连续学习
     } else if (lastStudyDate.value !== today) {
@@ -81,7 +94,7 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  // === 完成题目 ===
+  // 完成题目
   function completeQuestion(subject: 'chinese' | 'math' | 'english', correct: boolean) {
     const task = dailyTasks.value.find(t => t.subject === subject)
     if (task && !task.isCompleted) {
@@ -91,16 +104,15 @@ export const useUserStore = defineStore('user', () => {
       }
     }
 
-    // 奖励星星
     if (correct) {
       stars.value += 2
     } else {
-      stars.value += 1 // 参与也有奖励
+      stars.value += 1
     }
   }
 
-  // === 完成课程 ===
-  function completeLesson(subject: string, lessonId: string) {
+  // 完成课程
+  async function completeLesson(subject: string, lessonId: string) {
     if (!completedLessons.value[subject]) {
       completedLessons.value[subject] = []
     }
@@ -108,35 +120,63 @@ export const useUserStore = defineStore('user', () => {
       completedLessons.value[subject]!.push(lessonId)
     }
 
-    // 更新连续学习
     const today = new Date().toISOString().split('T')[0] || ''
     if (lastStudyDate.value !== today) {
       streak.value++
       lastStudyDate.value = today
     }
 
+    await saveToServer()
     saveToLocalStorage()
   }
 
-  // === 解锁成就 ===
+  // 解锁成就
   function unlockAchievement(achievementId: string) {
     if (!achievements.value.includes(achievementId)) {
       achievements.value.push(achievementId)
+      saveToServer()
       saveToLocalStorage()
     }
   }
 
-  // === 兑换奖励 ===
+  // 兑换奖励
   function redeemReward(cost: number): boolean {
     if (stars.value >= cost) {
       stars.value -= cost
+      saveToServer()
       saveToLocalStorage()
       return true
     }
     return false
   }
 
-  // === 持久化 ===
+  // 将用户数据同步到 API 服务器
+  async function saveToServer() {
+    const auth = useAuthStore()
+    if (!auth.currentUser) return
+    try {
+      await api.updateUser(auth.currentUser.id, {
+        stars: stars.value,
+        streak: streak.value,
+        lastStudyDate: lastStudyDate.value,
+        completedLessons: completedLessons.value,
+        achievements: achievements.value,
+        badges: badges.value,
+      })
+      // 同步回来更新 auth store
+      const { user } = await api.getUser(auth.currentUser.id)
+      auth.currentUser.stars = user.stars
+      auth.currentUser.streak = user.streak
+      auth.currentUser.lastStudyDate = user.last_study_date
+      auth.currentUser.completedLessons = JSON.parse(user.completed_lessons || '{}')
+      auth.currentUser.achievements = JSON.parse(user.achievements || '[]')
+      auth.currentUser.badges = JSON.parse(user.badges || '[]')
+    } catch (e) {
+      console.error('[user] saveToServer failed:', e)
+    }
+  }
+
+  // 持久化备用（localStorage）
   function saveToLocalStorage() {
     const data: UserState = {
       name: name.value,
@@ -176,8 +216,8 @@ export const useUserStore = defineStore('user', () => {
     completedLessons, achievements, badges, dailyTasks,
     currentLevel, nextLevel, levelProgress,
     totalCompleted, todayCompleted, todayProgress,
-    initDailyTasks, completeQuestion, completeLesson,
+    syncFromApi, initDailyTasks, completeQuestion, completeLesson,
     unlockAchievement, redeemReward,
-    saveToLocalStorage, loadFromLocalStorage,
+    saveToServer, saveToLocalStorage, loadFromLocalStorage,
   }
 })

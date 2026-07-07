@@ -1,12 +1,90 @@
 /**
  * 学习进度管理
- * 记录做题数、正确率、章节完成情况
+ * 全部走 API
  */
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useAuthStore } from './auth'
-import { progressDB, quizDB, wrongDB, generateId, type DBProgress, type DBWrongQuestion, type DBQuizResult } from '@/db'
+import { generateId } from '@/db'
+import { api, type ApiWrongQuestion, type ApiQuizResult } from '@/utils/api'
+
+/** 前端 progress 类型 */
+export interface FrontProgress {
+  id: string
+  userId: string
+  chapterId: string
+  subject: string
+  gradeId: string
+  completed: boolean
+  score: number
+  totalQuestions: number
+  correctAnswers: number
+  attempts: number
+  lastAttemptDate: string
+}
+
+/** 前端错题类型 */
+export interface FrontWrongQuestion {
+  id: string
+  userId: string
+  questionId: string
+  chapterId: string
+  subject: string
+  gradeId: string
+  question: string
+  userAnswer: string
+  correctAnswer: string
+  options: string[]
+  date: string
+  retried: boolean
+  retryCorrect: boolean
+}
+
+/** 前端测验结果类型 */
+export interface FrontQuizResult {
+  id: string
+  userId: string
+  chapterId: string
+  subject: string
+  gradeId: string
+  score: number
+  totalQuestions: number
+  correctAnswers: number
+  date: string
+}
+
+function mapWrongQuestion(w: ApiWrongQuestion): FrontWrongQuestion {
+  return {
+    id: w.id,
+    userId: w.user_id,
+    questionId: w.question_id,
+    chapterId: w.chapter_id,
+    subject: w.subject,
+    gradeId: w.grade_id,
+    question: w.question,
+    userAnswer: w.user_answer,
+    correctAnswer: w.correct_answer,
+    options: JSON.parse(w.options || '[]'),
+    date: w.date,
+    retried: !!w.retried,
+    retryCorrect: !!w.retry_correct,
+  }
+}
+
+function mapQuizResult(r: ApiQuizResult): FrontQuizResult {
+  return {
+    id: r.id,
+    userId: r.user_id,
+    chapterId: r.chapter_id,
+    subject: r.subject,
+    gradeId: r.grade_id,
+    score: r.score,
+    totalQuestions: r.total_questions,
+    correctAnswers: r.correct_answers,
+    date: r.date,
+  }
+}
 
 export const useProgressStore = defineStore('progress', () => {
   const isLoading = ref(false)
@@ -16,8 +94,8 @@ export const useProgressStore = defineStore('progress', () => {
   const todayStats = ref({ correctAnswers: 0, wrongAnswers: 0, quizzesCompleted: 0 })
 
   // 各章节进度缓存
-  const progressMap = ref<Map<string, DBProgress>>(new Map())
-  const wrongQuestions = ref<DBWrongQuestion[]>([])
+  const progressMap = ref<Map<string, FrontProgress>>(new Map())
+  const wrongQuestions = ref<FrontWrongQuestion[]>([])
 
   // 未复习的错题
   const unretriedWrongQuestions = computed(() =>
@@ -34,12 +112,14 @@ export const useProgressStore = defineStore('progress', () => {
       const userId = auth.currentUser.id
 
       // 加载今日统计（从 quizResults 计算）
-      const results = await quizDB.getByUser(userId)
+      const { results } = await api.getQuizResults(userId)
+      const apiResults = results.map(mapQuizResult)
+
       const today = new Date().toISOString().split('T')[0]
       let qCount = 0
       let cCount = 0
       let quizCount = 0
-      for (const r of results) {
+      for (const r of apiResults) {
         if (r.date.startsWith(today)) {
           qCount += r.totalQuestions
           cCount += r.correctAnswers
@@ -50,7 +130,8 @@ export const useProgressStore = defineStore('progress', () => {
       todayStats.value = { correctAnswers: cCount, wrongAnswers: qCount - cCount, quizzesCompleted: quizCount }
 
       // 加载错题
-      wrongQuestions.value = await wrongDB.getByUser(userId)
+      const wqData = await api.getWrongQuestions(userId)
+      wrongQuestions.value = wqData.questions.map(mapWrongQuestion)
     } catch (e) {
       console.error('Failed to load user data:', e)
     } finally {
@@ -60,7 +141,7 @@ export const useProgressStore = defineStore('progress', () => {
 
   // 获取最近学习的章节
   function getLastStudiedChapter(): { subject: string; chapterId: string } | null {
-    return null // 简化实现
+    return null
   }
 
   // 获取某年级某科的已完成章节数
@@ -88,36 +169,32 @@ export const useProgressStore = defineStore('progress', () => {
     isCorrect: boolean
   ) {
     try {
-      // 如果是错误答案，记录错题
+      // 如果是错误答案，记录错题走 API
       if (!isCorrect) {
-        const wrong: DBWrongQuestion = {
-          id: generateId(),
-          userId,
-          questionId,
-          chapterId,
-          subject,
-          gradeId,
-          question,
-          userAnswer,
-          correctAnswer,
-          options,
+        const { id } = await api.addWrongQuestion({
+          userId, chapterId, subject, gradeId,
+          questionId, question, userAnswer, correctAnswer, options,
+        })
+        const wrong: FrontWrongQuestion = {
+          id, userId, questionId, chapterId, subject, gradeId,
+          question, userAnswer, correctAnswer, options,
           date: new Date().toISOString(),
-          retried: false,
-          retryCorrect: false,
+          retried: false, retryCorrect: false,
         }
-        await wrongDB.add(wrong)
-        wrongQuestions.value.push(JSON.parse(JSON.stringify(wrong)))
+        wrongQuestions.value.push(wrong)
       }
 
-      // 更新进度 — 所有数据深拷贝后操作，避免 Proxy 污染 IDB
-      let progress = await progressDB.getByUserChapter(userId, chapterId)
-      if (!progress) {
-        const p: DBProgress = {
-          id: generateId(),
-          userId,
-          chapterId,
-          subject,
-          gradeId,
+      // 更新进度 — 先拿本地缓存的
+      const existing = progressMap.value.get(chapterId)
+      if (existing) {
+        existing.totalQuestions += 1
+        existing.correctAnswers += isCorrect ? 1 : 0
+        existing.score = existing.correctAnswers
+        existing.attempts += 1
+        existing.lastAttemptDate = new Date().toISOString()
+      } else {
+        const p: FrontProgress = {
+          id: generateId(), userId, chapterId, subject, gradeId,
           completed: false,
           score: isCorrect ? 1 : 0,
           totalQuestions: 1,
@@ -125,33 +202,16 @@ export const useProgressStore = defineStore('progress', () => {
           attempts: 1,
           lastAttemptDate: new Date().toISOString(),
         }
-        await progressDB.add(p)
-        progressMap.value.set(chapterId, p)
-      } else {
-        const p = JSON.parse(JSON.stringify(progress))
-        p.totalQuestions += 1
-        p.correctAnswers += isCorrect ? 1 : 0
-        p.score = p.correctAnswers
-        p.attempts += 1
-        p.lastAttemptDate = new Date().toISOString()
-        await progressDB.put(p)
         progressMap.value.set(chapterId, p)
       }
 
-      // 写入测验结果表（用于今日统计）
-      const today = new Date().toISOString().split('T')[0]
-      const quizResult: DBQuizResult = {
-        id: generateId(),
-        userId,
-        chapterId,
-        subject,
-        gradeId,
+      // 写入测验结果（走 API）
+      await api.addQuizResult({
+        userId, chapterId, subject, gradeId,
         score: isCorrect ? 1 : 0,
         totalQuestions: 1,
         correctAnswers: isCorrect ? 1 : 0,
-        date: new Date().toISOString(),
-      }
-      await quizDB.add(quizResult)
+      })
 
       // 同步更新本地今日统计
       todayQuestionCount.value += 1
