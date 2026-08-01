@@ -88,7 +88,19 @@ async function initDb() {
   db.run('CREATE INDEX IF NOT EXISTS idx_wrong_questions_user ON wrong_questions(user_id)')
   db.run('CREATE INDEX IF NOT EXISTS idx_quiz_results_user ON quiz_results(user_id)')
   db.run('CREATE INDEX IF NOT EXISTS idx_quiz_results_chapter ON quiz_results(chapter_id)')
-  db.run('CREATE INDEX IF NOT EXISTS idx_daily_tasks_user_date ON daily_tasks(user_id, date)')
+  db.run(`CREATE TABLE IF NOT EXISTS user_quiz_cache (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    chapter_id TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    grade_id TEXT NOT NULL,
+    questions TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE (user_id, chapter_id, subject, grade_id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  )`)
+
+  db.run('CREATE INDEX IF NOT EXISTS idx_user_quiz_cache_user ON user_quiz_cache(user_id)')
 
   return db
 }
@@ -376,6 +388,65 @@ app.put('/api/daily-tasks/:userId/:date', (req, res) => {
   } catch (e) {
     console.error('Save daily tasks error:', e)
     res.status(500).json({ error: '保存每日任务失败' })
+  }
+})
+
+// ===== 用户出题缓存 API（账号绑定的随机题缓存）=====
+
+// 获取某用户某章节的缓存题目（无则返回 null）
+app.get('/api/quiz-cache/:userId/:chapterId/:subject/:gradeId', (req, res) => {
+  try {
+    const row = getOne(
+      'SELECT questions FROM user_quiz_cache WHERE user_id = ? AND chapter_id = ? AND subject = ? AND grade_id = ?',
+      [req.params.userId, req.params.chapterId, req.params.subject, req.params.gradeId]
+    )
+    if (!row) return res.json({ questions: null })
+    res.json({ questions: JSON.parse(row.questions) })
+  } catch (e) {
+    console.error('Get quiz cache error:', e)
+    res.status(500).json({ error: '获取题目缓存失败' })
+  }
+})
+
+// 保存（覆盖）某用户某章节的缓存题目
+app.put('/api/quiz-cache/:userId/:chapterId/:subject/:gradeId', (req, res) => {
+  try {
+    const { questions } = req.body
+    if (!Array.isArray(questions)) {
+      return res.status(400).json({ error: 'questions 必须是数组' })
+    }
+    const existing = getOne(
+      'SELECT id FROM user_quiz_cache WHERE user_id = ? AND chapter_id = ? AND subject = ? AND grade_id = ?',
+      [req.params.userId, req.params.chapterId, req.params.subject, req.params.gradeId]
+    )
+    const now = new Date().toISOString()
+    if (existing) {
+      execRun('UPDATE user_quiz_cache SET questions = ?, updated_at = ? WHERE id = ?',
+        [JSON.stringify(questions), now, existing.id])
+    } else {
+      execRun(
+        'INSERT INTO user_quiz_cache (id, user_id, chapter_id, subject, grade_id, questions, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [generateId(), req.params.userId, req.params.chapterId, req.params.subject, req.params.gradeId, JSON.stringify(questions), now]
+      )
+    }
+    res.json({ success: true })
+  } catch (e) {
+    console.error('Save quiz cache error:', e)
+    res.status(500).json({ error: '保存题目缓存失败' })
+  }
+})
+
+// 清除某用户某章节的缓存（换一批题时调用）
+app.delete('/api/quiz-cache/:userId/:chapterId/:subject/:gradeId', (req, res) => {
+  try {
+    execRun(
+      'DELETE FROM user_quiz_cache WHERE user_id = ? AND chapter_id = ? AND subject = ? AND grade_id = ?',
+      [req.params.userId, req.params.chapterId, req.params.subject, req.params.gradeId]
+    )
+    res.json({ success: true })
+  } catch (e) {
+    console.error('Clear quiz cache error:', e)
+    res.status(500).json({ error: '清除题目缓存失败' })
   }
 })
 

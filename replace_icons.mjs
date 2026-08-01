@@ -1,3 +1,6 @@
+// ⚠️ 历史迁移工具（一次性）：把源码里中文 [] 图标替换成 Material Icons。
+// 仅在项目从旧图标方案迁移到 Material Icons 时运行过一次，
+// 切勿重复运行，否则会再次改写 src/ 下的 .vue / .ts 文件。
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';

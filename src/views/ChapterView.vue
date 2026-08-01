@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore, useLearningStore } from '@/stores/auth'
-import { getChapter, type Subject } from '@/data/chapters'
+import { getChapter, type Subject, type Question } from '@/data/chapters'
+import { getMixedQuestions, clearChineseCache, clearMathCache, clearEnglishCache } from '@/utils/questionGenerator'
 import { playCorrectSound, playWrongSound, speakCorrect, speakWrong, playVictorySound } from '@/utils/sound'
 
 const router = useRouter()
@@ -14,6 +15,22 @@ const subject = route.params.subject as Subject
 const chapterId = route.params.chapterId as string
 const chapter = computed(() => getChapter(authStore.currentGrade as any, subject, chapterId))
 
+// 动态/混合题目列表（语文/数学/英语走模板生成+账号绑定缓存）
+const questions = ref<Question[]>([])
+
+async function generateQuestions() {
+  if (!chapter.value) {
+    questions.value = []
+    return
+  }
+  questions.value = await getMixedQuestions(
+    chapter.value,
+    subject,
+    authStore.currentGrade as any,
+    authStore.currentUser?.id
+  )
+}
+
 const currentIndex = ref(0)
 const selectedAnswer = ref('')
 const showResult = ref(false)
@@ -21,11 +38,30 @@ const isCorrect = ref(false)
 const showCompletion = ref(false)
 const correctCount = ref(0)
 
-const currentQuestion = computed(() => chapter.value?.questions[currentIndex.value])
+const currentQuestion = computed(() => questions.value[currentIndex.value])
 const progress = computed(() => {
-  if (!chapter.value) return 0
-  return Math.round((currentIndex.value / chapter.value.questions.length) * 100)
+  if (!questions.value.length) return 0
+  return Math.round((currentIndex.value / questions.value.length) * 100)
 })
+
+// 手动换一批题（清空后端账号绑定的对应缓存后重生成）
+const regenerating = ref(false)
+async function regenerate() {
+  regenerating.value = true
+  const uid = authStore.currentUser?.id
+  if (uid) {
+    if (subject === 'chinese') await clearChineseCache(uid, chapterId, authStore.currentGrade as any)
+    if (subject === 'math') await clearMathCache(uid, chapterId, authStore.currentGrade as any)
+    if (subject === 'english') await clearEnglishCache(uid, chapterId, authStore.currentGrade as any)
+  }
+  await generateQuestions()
+  currentIndex.value = 0
+  selectedAnswer.value = ''
+  showResult.value = false
+  showCompletion.value = false
+  correctCount.value = 0
+  regenerating.value = false
+}
 
 function selectAnswer(answer: string) {
   if (showResult.value) return
@@ -44,19 +80,20 @@ function selectAnswer(answer: string) {
 }
 
 function nextQuestion() {
-  if (!chapter.value) return
-  if (currentIndex.value < chapter.value.questions.length - 1) {
+  if (!questions.value.length) return
+  if (currentIndex.value < questions.value.length - 1) {
     currentIndex.value++
     selectedAnswer.value = ''
     showResult.value = false
   } else {
     showCompletion.value = true
     playVictorySound()
-    learningStore.recordHistory(subject, chapterId, correctCount.value, chapter.value.questions.length)
+    learningStore.recordHistory(subject, chapterId, correctCount.value, questions.value.length)
   }
 }
 
 function retry() {
+  generateQuestions()
   currentIndex.value = 0
   selectedAnswer.value = ''
   showResult.value = false
@@ -65,6 +102,10 @@ function retry() {
 }
 
 function goBack() { router.push(`/subject/${subject}`) }
+
+onMounted(async () => {
+  await generateQuestions()
+})
 </script>
 
 <template>
@@ -76,7 +117,12 @@ function goBack() { router.push(`/subject/${subject}`) }
 
     <div class="progress-section" v-if="!showCompletion">
       <div class="progress-bar"><div class="fill" :style="{ width: progress + '%' }"></div></div>
-      <span class="progress-text">{{ currentIndex + 1 }}/{{ chapter?.questions.length }}</span>
+      <span class="progress-text">{{ currentIndex + 1 }}/{{ questions.length }}</span>
+    </div>
+
+    <!-- 换一批题（语文/数学均支持） -->
+    <div class="regen-bar" v-if="(subject === 'chinese' || subject === 'math' || subject === 'english') && !showCompletion">
+      <button class="regen-btn" @click="regenerate" :disabled="regenerating">🔄 换一批题</button>
     </div>
 
     <!-- 答题区 -->
@@ -141,7 +187,7 @@ function goBack() { router.push(`/subject/${subject}`) }
           {{ isCorrect ? '太棒了！答对啦！' : '加油哦！正确答案是 ' + currentQuestion?.answer }}
         </div>
         <button class="btn btn-primary next-btn" @click="nextQuestion">
-          {{ currentIndex < (chapter?.questions.length || 0) - 1 ? '下一题 ->' : '查看成绩 C' }}
+          {{ currentIndex < questions.length - 1 ? '下一题 ->' : '查看成绩 C' }}
         </button>
       </div>
     </div>
@@ -152,9 +198,9 @@ function goBack() { router.push(`/subject/${subject}`) }
         <div class="trophy">🏆</div>
         <h2>练习完成！</h2>
         <div class="stats">
-          <div class="stat-item"><div class="stat-value">{{ chapter?.questions.length }}</div><div class="stat-label">📝 总题数</div></div>
+          <div class="stat-item"><div class="stat-value">{{ questions.length }}</div><div class="stat-label">📝 总题数</div></div>
           <div class="stat-item"><div class="stat-value correct">{{ correctCount }}</div><div class="stat-label">✅ 答对</div></div>
-          <div class="stat-item"><div class="stat-value">{{ chapter ? Math.round(correctCount / chapter.questions.length * 100) : 0 }}%</div><div class="stat-label">🎯 正确率</div></div>
+          <div class="stat-item"><div class="stat-value">{{ questions.length ? Math.round(correctCount / questions.length * 100) : 0 }}%</div><div class="stat-label">🎯 正确率</div></div>
         </div>
         <div class="completion-actions">
           <button class="btn btn-secondary" @click="retry">再来一次 <></button>
@@ -175,6 +221,10 @@ h1 { font-size: 20px; }
 .progress-bar { flex: 1; height: 10px; background: #F0F0F0; border-radius: 5px; overflow: hidden; }
 .fill { height: 100%; background: linear-gradient(90deg, var(--color-primary), #6EDDD6); border-radius: 5px; transition: width 0.3s; }
 .progress-text { font-size: 14px; color: #888; font-weight: 600; }
+.regen-bar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+.regen-btn { background: white; border: 2px solid #FFE0B2; border-radius: 20px; padding: 6px 14px; font-size: 13px; cursor: pointer; color: #E08A2B; font-weight: 600; }
+.regen-btn:hover:not(:disabled) { background: #FFF5E6; border-color: #FFB74D; }
+.regen-btn:disabled { opacity: 0.5; cursor: default; }
 
 .question-area { margin-bottom: 16px; }
 .question-card { background: white; border-radius: 20px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 16px; text-align: center; }

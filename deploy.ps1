@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Continue"
 
-$projectDir = "C:\Users\Yoodao\.openclaw\workspace-senior-dev\kids-learning"
+$projectDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $ftpHost = "47.95.213.150"
 $ftpPort = 21
 $ftpUser = "kids"

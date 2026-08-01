@@ -6,7 +6,7 @@
 // 生产环境：你的服务器 IP/域名 + 端口
 // 开发环境：本地 7777
 const API_BASE = import.meta.env.DEV
-  ? 'http://localhost:7777'
+  ? 'http://47.95.213.150:7777'
   : 'http://47.95.213.150:7777'
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -143,6 +143,27 @@ export const api = {
     return request<{ success: boolean }>(`/api/daily-tasks/${userId}/${date}`, {
       method: 'PUT', body: JSON.stringify({ tasks }),
     })
+  },
+
+  // 用户出题缓存（账号绑定的随机题缓存）
+  getQuizCache(userId: string, chapterId: string, subject: string, gradeId: string) {
+    return request<{ questions: unknown[] | null }>(
+      `/api/quiz-cache/${userId}/${chapterId}/${subject}/${gradeId}`
+    )
+  },
+
+  saveQuizCache(userId: string, chapterId: string, subject: string, gradeId: string, questions: unknown[]) {
+    return request<{ success: boolean }>(`/api/quiz-cache/${userId}/${chapterId}/${subject}/${gradeId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ questions }),
+    })
+  },
+
+  clearQuizCache(userId: string, chapterId: string, subject: string, gradeId: string) {
+    return request<{ success: boolean }>(
+      `/api/quiz-cache/${userId}/${chapterId}/${subject}/${gradeId}`,
+      { method: 'DELETE' }
+    )
   },
 
   // 健康检查

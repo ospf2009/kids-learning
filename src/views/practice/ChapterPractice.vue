@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useProgressStore } from '@/stores/progress'
 import { useUserStore } from '@/stores/user'
 import { getChapter, type GradeId, type Subject, type Question } from '@/data/chapters'
-import { getMixedQuestions } from '@/utils/questionGenerator'
+import { getMixedQuestions, clearChineseCache, clearMathCache, clearEnglishCache } from '@/utils/questionGenerator'
 import { getOptionEmoji } from '@/utils/questionGenerator'
 import { wrongDB } from '@/db'
 import { playCorrectSound, playWrongSound, speakCorrect, speakWrong, playVictorySound } from '@/utils/sound'
@@ -22,11 +22,23 @@ const userGrade = computed<GradeId>(() => (authStore.grade || 'grade1-down') as 
 
 // 获取并随机打乱题目顺序（支持动态生成）
 const chapterData = computed(() => getChapter(userGrade.value, subject.value, chapterId))
-const shuffledQuestions = computed(() => {
-  if (!chapterData.value) return []
-  const all = getMixedQuestions(chapterData.value, subject.value, userGrade.value)
-  return all.slice(0, 10)
-})
+
+// 用 ref 存储题目列表，支持「换一批题」手动重新生成
+const shuffledQuestions = ref<Question[]>([])
+
+async function generateQuestions() {
+  if (!chapterData.value) {
+    shuffledQuestions.value = []
+    return
+  }
+  const all = await getMixedQuestions(
+    chapterData.value,
+    subject.value,
+    userGrade.value,
+    authStore.currentUser?.id
+  )
+  shuffledQuestions.value = all.slice(0, 10)
+}
 
 const currentIndex = ref(0)
 const selectedAnswer = ref('')
@@ -107,6 +119,30 @@ function nextQuestion() {
 }
 
 function retry() {
+  generateQuestions()
+  currentIndex.value = 0
+  selectedAnswer.value = ''
+  showResult.value = false
+  showCompletion.value = false
+  correctCount.value = 0
+  totalWrong.value = 0
+}
+
+// 换一批题：清空对应科目（后端账号绑定）的缓存后重新随机生成题目，并重置答题状态
+async function changeBatch() {
+  const uid = authStore.currentUser?.id
+  if (uid && chapterData.value) {
+    if (subject.value === 'chinese') {
+      await clearChineseCache(uid, chapterId, userGrade.value)
+    }
+    if (subject.value === 'math') {
+      await clearMathCache(uid, chapterId, userGrade.value)
+    }
+    if (subject.value === 'english') {
+      await clearEnglishCache(uid, chapterId, userGrade.value)
+    }
+  }
+  await generateQuestions()
   currentIndex.value = 0
   selectedAnswer.value = ''
   showResult.value = false
@@ -118,6 +154,11 @@ function retry() {
 function goBack() {
   router.push(`/practice/${subject.value}`)
 }
+
+// 进入页面时初始化生成题目
+onMounted(async () => {
+  await generateQuestions()
+})
 
 // Fisher-Yates shuffle (local helper)
 function shuffleArray<T>(arr: T[]): T[] {
@@ -195,6 +236,7 @@ function getFillOptions(q: Question): string[] {
     <div class="progress-section" v-if="!showCompletion">
       <div class="progress-bar"><div class="fill" :style="{ width: progress + '%' }"></div></div>
       <span class="progress-text">{{ currentIndex + 1 }} / {{ shuffledQuestions.length }}</span>
+      <button class="change-batch-btn" @click="changeBatch" title="换一批题">🔄 换一批题</button>
     </div>
 
     <!-- 答题区 -->
@@ -300,6 +342,31 @@ function getFillOptions(q: Question): string[] {
 .progress-bar { flex: 1; height: 6px; background: var(--bg-input); border-radius: var(--radius-full); overflow: hidden; }
 .fill { height: 100%; border-radius: var(--radius-full); background: linear-gradient(90deg, var(--color-primary), #F59E0B); transition: width 0.3s; }
 .progress-text { font-size: var(--font-size-sm); color: var(--text-tertiary); font-weight: 600; min-width: 50px; text-align: right; }
+.change-batch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 6px 12px;
+  background: white;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-full);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  box-shadow: var(--shadow-sm);
+}
+.change-batch-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: #FFF5F5;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
 
 /* 题目区域 */
 .question-area { margin-bottom: var(--space-4); }
