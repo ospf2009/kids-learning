@@ -294,6 +294,66 @@ app.post('/api/wrong-questions', (req, res) => {
   }
 })
 
+// 清洗历史脏数据：user_answer 为占位符（'__wrong__' / 'wrong' / '未填答' / 空）的错题
+// 注意：这两个路由必须注册在 '/api/wrong-questions/:userId' 之前，
+//       否则 Express 会把 'cleanup' 当作 userId 匹配掉。
+// GET  /api/wrong-questions/cleanup/preview[?userId=xxx]  → 只统计不改动
+// POST /api/wrong-questions/cleanup                       → 执行清洗
+//      body: { mode: 'delete' | 'fix', userId?: string, replacement?: string }
+//        - delete：删除这些脏记录（默认）
+//        - fix：把 user_answer 改写为 replacement（默认「（空）」），保留错题本身
+const DIRTY_ANSWER_SQL = `(user_answer IN ('__wrong__', 'wrong', '未填答') OR TRIM(COALESCE(user_answer, '')) = '')`
+
+app.get('/api/wrong-questions/cleanup/preview', (req, res) => {
+  try {
+    const { userId } = req.query
+    const where = userId
+      ? `WHERE ${DIRTY_ANSWER_SQL} AND user_id = ?`
+      : `WHERE ${DIRTY_ANSWER_SQL}`
+    const params = userId ? [userId] : []
+
+    const rows = getAll(
+      `SELECT id, user_id, question, user_answer, correct_answer, date FROM wrong_questions ${where} ORDER BY date DESC`,
+      params
+    )
+    const total = getOne('SELECT COUNT(*) AS c FROM wrong_questions', [])
+
+    res.json({ dirtyCount: rows.length, totalCount: total?.c ?? 0, samples: rows.slice(0, 20) })
+  } catch (e) {
+    console.error('Cleanup preview error:', e)
+    res.status(500).json({ error: '预览清洗失败' })
+  }
+})
+
+app.post('/api/wrong-questions/cleanup', (req, res) => {
+  try {
+    const { mode = 'delete', userId, replacement = '（空）' } = req.body || {}
+    if (mode !== 'delete' && mode !== 'fix') {
+      return res.status(400).json({ error: "mode 只能是 'delete' 或 'fix'" })
+    }
+
+    const where = userId
+      ? `WHERE ${DIRTY_ANSWER_SQL} AND user_id = ?`
+      : `WHERE ${DIRTY_ANSWER_SQL}`
+
+    let affected
+    if (mode === 'delete') {
+      affected = execRun(`DELETE FROM wrong_questions ${where}`, userId ? [userId] : [])
+    } else {
+      affected = execRun(
+        `UPDATE wrong_questions SET user_answer = ? ${where}`,
+        userId ? [replacement, userId] : [replacement]
+      )
+    }
+
+    console.log(`[cleanup] mode=${mode} userId=${userId || 'ALL'} affected=${affected}`)
+    res.json({ success: true, mode, affected })
+  } catch (e) {
+    console.error('Cleanup error:', e)
+    res.status(500).json({ error: '清洗失败' })
+  }
+})
+
 // 获取用户错题列表
 app.get('/api/wrong-questions/:userId', (req, res) => {
   try {

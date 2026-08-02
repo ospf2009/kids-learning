@@ -1,30 +1,32 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, computed, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { wrongDB, type DBWrongQuestion } from '@/db'
-import { playCorrectSound, playWrongSound, speakCorrect, speakWrong, playVictorySound } from '@/utils/sound'
 import { useUserStore } from '@/stores/user'
+import { useProgressStore, type FrontWrongQuestion } from '@/stores/progress'
+import { playCorrectSound, playWrongSound, speakCorrect, speakWrong, playVictorySound } from '@/utils/sound'
 import { getChapter, type GradeId, type Subject } from '@/data/chapters'
+import ChoiceQuestion from '@/components/ChoiceQuestion.vue'
+import TapQuestion from '@/components/TapQuestion.vue'
+import DragQuestion from '@/components/DragQuestion.vue'
+import ConnectQuestion from '@/components/ConnectQuestion.vue'
 
 const router = useRouter()
-const route = useRoute()
 const authStore = useAuthStore()
 const userStore = useUserStore()
+const progressStore = useProgressStore()
 
 const subjectNames: Record<string, string> = { chinese: '语文', math: '数学', english: '英语' }
 
-// 从路由 query 获取错题数据
-const initialData = route.query.data as string | undefined
-let wrongList: DBWrongQuestion[] = []
+// 从 pinia store 取复习队列（避免 URL query 超长被截断）
+const wrongList: FrontWrongQuestion[] = progressStore.reviewQueue.length > 0
+  ? [...progressStore.reviewQueue]
+  : []
 
-try {
-  if (initialData && typeof initialData === 'string') {
-    wrongList = JSON.parse(decodeURIComponent(initialData))
-  }
-} catch {
-  wrongList = []
-}
+// 离开页面时清空队列，避免下次进入时残留旧数据
+onUnmounted(() => {
+  progressStore.clearReviewQueue()
+})
 
 const currentIndex = ref(0)
 const selectedAnswer = ref('')
@@ -34,20 +36,41 @@ const showCompletion = ref(false)
 const totalReview = ref(wrongList.length)
 const reviewedCount = ref(0)
 const masteredCount = ref(0)
+// 复习时记录每题的 userAnswer（画布组件 emit 出来的真实作答）
+const lastUserAnswer = ref('')
 
-const currentWrong = ref<DBWrongQuestion | undefined>(wrongList[0])
+const currentWrong = ref<FrontWrongQuestion | undefined>(wrongList[0])
 
-function getOptions(): string[] {
-  const q = currentWrong.value
-  if (!q) return []
-  if (q.options && q.options.length > 0) return q.options
-  return ['对', '错']
+/** 将 FrontWrongQuestion 适配回 Question 形状，复用 ChoiceQuestion 等画布组件 */
+function toQuestionLike(q: FrontWrongQuestion) {
+  return {
+    id: q.questionId,
+    type: inferType(q),
+    question: q.question,
+    options: q.options && q.options.length > 0 ? q.options : ['对', '错'],
+    answer: q.correctAnswer,
+  } as any
 }
 
-async function selectAnswer(answer: string) {
+/** 推断题型：先按 options 数量与内容简单判断，更精细的判断可由后端字段补充 */
+function inferType(q: FrontWrongQuestion): 'choice' | 'judge' | 'fill' | 'tap' | 'drag' | 'connect' {
+  // judge 题：选项只有「对」「错」两种
+  if (q.options && q.options.length === 2
+      && (q.options.includes('对') || q.options.includes('错'))) {
+    return 'judge'
+  }
+  // 其它带 options 的视为 choice
+  if (q.options && q.options.length >= 2) return 'choice'
+  // 无 options 的纯文本题用 fill
+  return 'fill'
+}
+
+/** 答错/答对时由父组件统一处理（无论哪种题型） */
+async function handleResult(correct: boolean, userAnswer?: string) {
   if (showResult.value || !currentWrong.value) return
-  selectedAnswer.value = answer
-  isCorrect.value = answer === currentWrong.value.correctAnswer
+  selectedAnswer.value = userAnswer || ''
+  isCorrect.value = !!correct
+  lastUserAnswer.value = userAnswer || ''
   showResult.value = true
 
   if (isCorrect.value) {
@@ -61,16 +84,10 @@ async function selectAnswer(answer: string) {
     speakWrong()
   }
 
-  // 更新错题记录
-  try {
-    const q = wrongList[currentIndex.value]
-    if (q && authStore.currentUser) {
-      q.retried = true
-      q.retryCorrect = isCorrect.value
-      await wrongDB.put(q)
-    }
-  } catch (e) {
-    console.error('[Review] update wrong record:', e)
+  // 同步复习结果到服务端 + 更新 store
+  const q = wrongList[currentIndex.value]
+  if (q) {
+    await progressStore.updateWrongRetry(q.id, true, isCorrect.value)
   }
 }
 
@@ -79,6 +96,7 @@ function nextQuestion() {
     currentIndex.value++
     currentWrong.value = wrongList[currentIndex.value]
     selectedAnswer.value = ''
+    lastUserAnswer.value = ''
     showResult.value = false
     reviewedCount.value++
   } else {
@@ -88,18 +106,31 @@ function nextQuestion() {
   }
 }
 
-function goBack() { router.push('/wrong-book') }
-function goWrongBook() { router.push('/wrong-book') }
+function goBack() {
+  progressStore.clearReviewQueue()
+  router.push('/wrong-book')
+}
 
-function getChapterName(q: DBWrongQuestion): string {
+function getChapterName(q: FrontWrongQuestion): string {
   const chapter = getChapter(q.gradeId as GradeId, q.subject as Subject, q.chapterId)
   return chapter?.title || q.chapterId
 }
 
-const progress = () => {
+/** 错题本展示用户作答：
+ *  - 真实作答（如选项 label）→ 原样显示
+ *  - 空 / null / undefined → 显示「（空）」
+ *  - 历史脏数据（'__wrong__' 等占位符）→ 原样显示 */
+function displayUserAnswer(raw: string | undefined | null): string {
+  if (raw == null) return '（空）'
+  const s = String(raw)
+  if (s.trim() === '') return '（空）'
+  return s
+}
+
+const progress = computed(() => {
   if (totalReview.value === 0) return 0
   return Math.round((currentIndex.value / totalReview.value) * 100)
-}
+})
 </script>
 
 <template>
@@ -111,17 +142,17 @@ const progress = () => {
     </div>
 
     <!-- 复习进度 -->
-    <div class="progress-section" v-if="!showCompletion">
-      <div class="progress-bar"><div class="fill" :style="{ width: progress() + '%' }"></div></div>
+    <div class="progress-section" v-if="!showCompletion && wrongList.length > 0">
+      <div class="progress-bar"><div class="fill" :style="{ width: progress + '%' }"></div></div>
     </div>
 
     <!-- 无错题 -->
     <div v-if="wrongList.length === 0 && !showCompletion" class="empty">
       <p>没有需要复习的错题</p>
-      <button class="btn-primary" @click="goWrongBook" style="margin-top: 12px;">返回错题本</button>
+      <button class="btn-primary" @click="goBack" style="margin-top: 12px;">返回错题本</button>
     </div>
 
-    <!-- 答题区 -->
+    <!-- 答题区（与 ChapterPractice 完全一致：画布 + 题型分支） -->
     <div v-if="currentWrong && !showCompletion" class="question-area">
       <div class="wrong-info">
         <span class="wi-badge" :class="'wi-' + currentWrong.subject">{{ subjectNames[currentWrong.subject] || currentWrong.subject }}</span>
@@ -129,40 +160,35 @@ const progress = () => {
       </div>
 
       <div class="question-card">
-        <p class="question-type-badge">复习题</p>
+        <p class="question-type-badge">复习题 · {{ currentWrong.questionId }}</p>
         <h2 class="question-text">{{ currentWrong.question }}</h2>
       </div>
 
-      <!-- 你的旧答案（只提示，不显示正确性） -->
-      <div class="old-answer">
-        之前答：<span class="old-answer-text">{{ currentWrong.userAnswer }}</span>
-      </div>
-
-      <!-- 选项 -->
-      <div class="options-grid"
-        :class="getOptions().length > 4 ? 'options-grid-3' : 'options-grid-2'">
-        <button
-          v-for="opt in getOptions()"
-          :key="opt"
-          class="option-btn"
-          :class="{
-            selected: selectedAnswer === opt,
-            correct: showResult && opt === currentWrong.correctAnswer,
-            wrong: showResult && selectedAnswer === opt && opt !== currentWrong.correctAnswer
-          }"
-          @click="selectAnswer(opt!)"
+      <!-- 选择 / 判断 / 填空：复用 ChoiceQuestion（Leafer 画布，含自动图示） -->
+      <div v-if="['choice', 'judge', 'fill'].includes(inferType(currentWrong))" class="interactive-area">
+        <ChoiceQuestion
+          :question="toQuestionLike(currentWrong) as any"
           :disabled="showResult"
-        >{{ opt }}</button>
+          @result="(c: boolean, ua?: string) => handleResult(c, ua)"
+        />
       </div>
 
-      <!-- 结果 -->
+      <!-- 互动题类型在没有 scene 数据时降级为文本提示，避免画布空渲染 -->
+      <div v-else class="interactive-area">
+        <div class="fallback-text">{{ currentWrong.question }}</div>
+      </div>
+
+      <!-- 答题反馈（与 ChapterPractice 一致：🎉 / 💪 + 正确答案 + 下一题） -->
       <div class="result-feedback" v-if="showResult">
-        <div class="feedback-icon">{{ isCorrect ? '&#x1F389;' : '&#x1F4AA;' }}</div>
+        <div class="feedback-icon feedback-correct" v-if="isCorrect">🎉</div>
+        <div class="feedback-icon feedback-wrong" v-else>💪</div>
         <div class="feedback-text">
-          {{ isCorrect ? '答对了！掌握了这道题！' : '正确答案是：「' + currentWrong.correctAnswer + '」' }}
+          {{ isCorrect
+              ? '太棒了！答对啦！'
+              : '加油哦！正确答案是：「' + currentWrong.correctAnswer + '」' }}
         </div>
         <button class="next-btn" @click="nextQuestion">
-          {{ currentIndex < totalReview - 1 ? '下一题 &rarr;' : '完成复习 &rarr;' }}
+          {{ currentIndex < totalReview - 1 ? '下一题 →' : '完成复习 🏆' }}
         </button>
       </div>
     </div>
@@ -170,7 +196,7 @@ const progress = () => {
     <!-- 完成 -->
     <div class="completion" v-if="showCompletion">
       <div class="completion-card">
-        <div class="trophy">&#x1F3C6;</div>
+        <div class="trophy">🏆</div>
         <h2>复习完成！</h2>
         <div class="stats">
           <div class="stat-item"><div class="stat-value">{{ totalReview }}</div><div class="stat-label">总复习</div></div>
@@ -178,14 +204,12 @@ const progress = () => {
           <div class="stat-item"><div class="stat-value">{{ totalReview ? Math.round(masteredCount / totalReview * 100) : 0 }}%</div><div class="stat-label">掌握率</div></div>
         </div>
         <div class="completion-actions">
-          <button class="btn-secondary" @click="goWrongBook">返回错题本</button>
+          <button class="btn-secondary" @click="goBack">返回错题本</button>
         </div>
       </div>
     </div>
   </div>
 </template>
-
-
 
 <style scoped>
 .page { padding-bottom: var(--space-8); animation: fadeInUp 0.3s ease; }
@@ -201,39 +225,17 @@ const progress = () => {
 
 .wrong-info { display: flex; gap: 8px; margin-bottom: var(--space-3); }
 .wi-badge { font-size: var(--font-size-xs); padding: 2px 8px; border-radius: var(--radius-sm); font-weight: 600; }
+.wi-chapter { font-size: var(--font-size-xs); color: var(--text-tertiary); line-height: 1.8; }
 .wi-chinese { background: var(--color-chinese-bg); color: var(--color-chinese); }
 .wi-math { background: var(--color-math-bg); color: var(--color-math); }
 .wi-english { background: var(--color-english-bg); color: var(--color-english); }
-.wi-chapter { font-size: var(--font-size-xs); color: var(--text-tertiary); line-height: 1.8; }
 
-.question-card { background: white; border: 1px solid var(--border-color); border-radius: var(--radius-xl); padding: var(--space-6); margin-bottom: var(--space-3); text-align: center; }
-.question-type-badge { font-size: var(--font-size-xs); color: var(--text-tertiary); margin-bottom: var(--space-3); }
-.question-text { font-size: var(--font-size-lg); color: var(--text-primary); line-height: 1.5; font-weight: 500; }
+.question-card { background: white; border: 1px solid var(--border-color); border-radius: var(--radius-xl); padding: var(--space-6); margin-bottom: var(--space-4); text-align: center; }
+.question-type-badge { font-size: var(--font-size-xs); color: var(--text-tertiary); margin-bottom: var(--space-3); padding: 2px 10px; background: var(--bg-input); border-radius: var(--radius-full); display: inline-block; }
+.question-text { font-size: var(--font-size-xl); color: var(--text-primary); line-height: 1.5; font-weight: 500; }
 
-.old-answer { text-align: center; font-size: var(--font-size-sm); color: var(--text-tertiary); margin-bottom: var(--space-4); }
-.old-answer-text { color: var(--color-danger); text-decoration: line-through; font-weight: 600; }
-
-.options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.options-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
-.options-grid-2 { grid-template-columns: 1fr 1fr; max-width: 300px; margin: 0 auto; }
-
-.option-btn {
-  background: white;
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 14px;
-  font-family: inherit;
-  font-size: var(--font-size-md);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-  box-shadow: var(--shadow-sm);
-}
-.option-btn:hover:not(:disabled) { border-color: var(--color-primary); box-shadow: var(--shadow-md); transform: translateY(-1px); }
-.option-btn:disabled { cursor: default; }
-.option-btn.selected { border-color: var(--color-primary); background: #FFF5F5; }
-.option-btn.correct { border-color: var(--color-success); background: #F0FDF4; animation: popIn 0.3s; }
-.option-btn.wrong { border-color: var(--color-danger); background: #FEF2F2; }
+.interactive-area { margin-bottom: var(--space-4); }
+.fallback-text { background: white; border: 1px dashed var(--border-color); border-radius: var(--radius-md); padding: var(--space-4); color: var(--text-tertiary); text-align: center; font-size: var(--font-size-sm); }
 
 .result-feedback { text-align: center; margin-top: var(--space-5); animation: popIn 0.3s; }
 .feedback-icon { font-size: 48px; margin-bottom: var(--space-2); }

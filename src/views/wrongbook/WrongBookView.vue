@@ -1,62 +1,58 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { wrongDB, type DBWrongQuestion } from '@/db'
+import { useProgressStore, type FrontWrongQuestion } from '@/stores/progress'
 
 const router = useRouter()
-const authStore = useAuthStore()
-const wrongQuestions = ref<DBWrongQuestion[]>([])
+const progressStore = useProgressStore()
 
 const subjectNames: Record<string, string> = { chinese: '语文', math: '数学', english: '英语' }
 
 onMounted(async () => {
-  if (authStore.currentUser) {
-    wrongQuestions.value = await wrongDB.getByUser(authStore.currentUser.id)
+  // 拉取服务端错题（与首页角标同一数据源）
+  if (progressStore.wrongQuestions.length === 0) {
+    await progressStore.loadUserData()
   }
 })
 
 // 待复习（没复习过、或复习了但做错的）
 const pendingItems = computed(() =>
-  wrongQuestions.value.filter(w => !w.retried || (w.retried && !w.retryCorrect))
+  progressStore.wrongQuestions.filter(w => !w.retried || (w.retried && !w.retryCorrect))
 )
 
 // 已掌握（复习过且做对的）
 const masteredItems = computed(() =>
-  wrongQuestions.value.filter(w => w.retried && w.retryCorrect)
+  progressStore.wrongQuestions.filter(w => w.retried && w.retryCorrect)
 )
 
 function goBack() { router.push('/') }
 
 async function removeWrong(id: string) {
-  await wrongDB.remove(id)
-  wrongQuestions.value = wrongQuestions.value.filter(w => w.id !== id)
+  await progressStore.removeWrong(id)
 }
 
 async function clearAll() {
-  if (wrongQuestions.value.length === 0) return
-  await wrongDB.clear()
-  wrongQuestions.value = []
+  if (progressStore.wrongQuestions.length === 0) return
+  if (!confirm('确定要清空所有错题吗？')) return
+  await progressStore.clearAllWrong()
 }
 
 async function clearMastered() {
   if (masteredItems.value.length === 0) return
-  for (const w of masteredItems.value) {
-    await wrongDB.remove(w.id)
-  }
-  wrongQuestions.value = wrongQuestions.value.filter(w => !w.retried || !w.retryCorrect)
+  if (!confirm('确定要清空已掌握的错题吗？')) return
+  await progressStore.clearMasteredWrong()
 }
 
-function reviewWrong(q: DBWrongQuestion) {
-  // 只跳转到复习页面，只传这一条错题
-  const data = encodeURIComponent(JSON.stringify([q]))
-  router.push({ name: 'wrong-book-review', query: { data } })
+function reviewWrong(q: FrontWrongQuestion) {
+  // 通过 store 暂存，避免 URL query 超长被截断
+  progressStore.setReviewQueue([q])
+  router.push({ name: 'wrong-book-review' })
 }
 
 function reviewAllPending() {
   if (pendingItems.value.length === 0) return
-  const data = encodeURIComponent(JSON.stringify(pendingItems.value))
-  router.push({ name: 'wrong-book-review', query: { data } })
+  progressStore.setReviewQueue([...pendingItems.value])
+  router.push({ name: 'wrong-book-review' })
 }
 
 function formatDate(dateStr: string): string {
@@ -66,6 +62,17 @@ function formatDate(dateStr: string): string {
     return dateStr
   }
 }
+
+/** 错题本展示用户作答：
+ *  - 真实作答（如选项 label）→ 原样显示
+ *  - 空 / null / undefined → 显示「（空）」，区别于"答错"的有内容
+ *  - 历史脏数据（'__wrong__' 等占位符）→ 原样显示，肉眼可识别为旧数据问题 */
+function displayUserAnswer(raw: string | undefined | null): string {
+  if (raw == null) return '（空）'
+  const s = String(raw)
+  if (s.trim() === '') return '（空）'
+  return s
+}
 </script>
 
 <template>
@@ -73,11 +80,11 @@ function formatDate(dateStr: string): string {
     <div class="page-header">
       <button class="back-btn" @click="goBack">&larr; 返回</button>
       <h1>错题本</h1>
-      <button v-if="wrongQuestions.length > 0" class="clear-btn" @click="clearAll">清空</button>
+      <button v-if="progressStore.wrongQuestions.length > 0" class="clear-btn" @click="clearAll">清空</button>
     </div>
 
     <!-- 完全无错题 -->
-    <div v-if="wrongQuestions.length === 0" class="empty">
+    <div v-if="progressStore.wrongQuestions.length === 0" class="empty">
       <div class="empty-icon">&#x1F389;</div>
       <p>太棒了，没有错题！</p>
     </div>
@@ -104,7 +111,7 @@ function formatDate(dateStr: string): string {
             </div>
             <p class="c-question">{{ q.question }}</p>
             <div class="c-answers">
-              <span class="c-yours">你答 <span class="c-wrong">{{ q.userAnswer }}</span></span>
+              <span class="c-yours">你答 <span class="c-wrong">{{ displayUserAnswer(q.userAnswer) }}</span></span>
               <span class="c-correct">正解 <span class="c-right">{{ q.correctAnswer }}</span></span>
             </div>
             <button class="c-review-btn" @click="reviewWrong(q)">复习这道题 &rarr;</button>

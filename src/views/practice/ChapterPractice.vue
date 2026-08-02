@@ -6,7 +6,10 @@ import { useProgressStore } from '@/stores/progress'
 import { useUserStore } from '@/stores/user'
 import { getChapter, type GradeId, type Subject, type Question } from '@/data/chapters'
 import { getMixedQuestions, clearChineseCache, clearMathCache, clearEnglishCache } from '@/utils/questionGenerator'
-import { getOptionEmoji } from '@/utils/questionGenerator'
+import TapQuestion from '@/components/TapQuestion.vue'
+import DragQuestion from '@/components/DragQuestion.vue'
+import ConnectQuestion from '@/components/ConnectQuestion.vue'
+import ChoiceQuestion from '@/components/ChoiceQuestion.vue'
 import { wrongDB } from '@/db'
 import { playCorrectSound, playWrongSound, speakCorrect, speakWrong, playVictorySound } from '@/utils/sound'
 
@@ -57,10 +60,23 @@ const progress = computed(() => {
 
 const subjectColors: Record<string, string> = { chinese: '#FF6B6B', math: '#4ECDC4', english: '#60A5FA' }
 
-async function selectAnswer(answer: string) {
+/** 互动题（tap/drag/connect）通过事件上报是否正确；
+ *  userAnswer 为用户实际作答内容（点中的元素 / 拖到的目标 / 连线等），
+ *  错题本里展示用。画布组件答错时一定会把真实错答传上来，所以这里几乎不兜底 */
+async function submitInteractive(correct: boolean, userAnswer?: string) {
   if (showResult.value) return
-  selectedAnswer.value = answer
-  isCorrect.value = answer === currentQuestion.value?.answer
+  // 真实错答：用户选了 X / 拖到 Y / 连了 Z，错题本要显示「你答 X」而不是占位
+  // 万一画布组件没传 userAnswer（极少见），才用正解或「（空）」兜底，绝不再写 '__wrong__'
+  const real = (userAnswer != null && String(userAnswer).length > 0)
+    ? userAnswer
+    : (correct ? (currentQuestion.value?.answer ?? '') : '（空）')
+  applyResult(correct, real)
+}
+
+/** 统一判分与记录逻辑（answer 为选中值，互动题直接传对错结果） */
+async function applyResult(correct: boolean, answer: string) {
+  if (showResult.value) return
+  isCorrect.value = correct
   showResult.value = true
 
   if (isCorrect.value) {
@@ -169,61 +185,6 @@ function shuffleArray<T>(arr: T[]): T[] {
   }
   return a
 }
-
-function getFillOptions(q: Question): string[] {
-  // 如果题目提供了选项，优先使用
-  if (q.options && q.options.length > 0) return q.options
-
-  const answer = q.answer
-
-  // 根据答案类型选择对应的干扰项池
-  function guessPoolByAnswer(ans: string): string[] {
-    // 纯数字
-    if (/^\d+$/.test(ans)) {
-      return ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-              '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20']
-    }
-    // 单个/双个中文字
-    if (/^[\u4e00-\u9fff]+$/.test(ans)) {
-      return ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十',
-              '上', '下', '左', '右', '大', '小', '多', '少',
-              '天', '地', '人', '口', '手', '足', '日', '月', '水', '火',
-              '木', '金', '土', '山', '石', '田', '飞', '虫', '鸟',
-              '春', '夏', '秋', '冬', '风', '雪', '花', '草', '果', '叶',
-              '米', '厘', '元', '角', '分',
-              '对', '错', '出', '入', '来', '去',
-              '晴', '清', '请', '睛', '眼', '睛', '保', '护',
-              '我', '你', '他', '她', '它', '们',
-              '东', '西', '南', '北', '前', '后']
-    }
-    // 字母拼音
-    if (/^[a-zA-Z]+$/.test(ans)) {
-      return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-              'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-              'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
-              'Good', 'Hello', 'my', 'Thank']
-    }
-    return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-            'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
-  }
-
-  const pool = guessPoolByAnswer(answer)
-
-  // 构建包含正确答案 + 干扰项的选项
-  const opts = new Set<string>()
-  opts.add(answer)
-
-  // 添加干扰项
-  const noisePool = pool.filter(p => p !== answer)
-  const shuffledNoise = shuffleArray(noisePool)
-  const needed = Math.min(5, Math.max(3, 6 - opts.size))
-
-  for (let i = 0; i < needed && i < shuffledNoise.length; i++) {
-    opts.add(shuffledNoise[i]!)
-  }
-
-  return shuffleArray(Array.from(opts))
-}
 </script>
 
 <template>
@@ -243,61 +204,49 @@ function getFillOptions(q: Question): string[] {
     <div class="question-area" v-if="currentQuestion && !showCompletion">
       <div class="question-card">
         <p class="question-type-badge">
-          {{ currentQuestion.type === 'choice' ? '选择题' : currentQuestion.type === 'judge' ? '判断题' : '填空题' }}
+          {{ currentQuestion.type === 'choice' ? '选择题' : currentQuestion.type === 'judge' ? '判断题' : currentQuestion.type === 'fill' ? '填空题' : '互动题' }}
         </p>
         <div class="question-hint" v-if="currentQuestion.hint">★ {{ currentQuestion.hint }}</div>
         <h2 class="question-text">{{ currentQuestion.question }}</h2>
       </div>
 
-      <!-- 选择题 -->
-      <div v-if="currentQuestion.type === 'choice'" class="options-grid"
-        :class="{ 'options-grid-3': (currentQuestion.options?.length || 0) > 4 }">
-        <button
-          v-for="opt in currentQuestion.options"
-          :key="opt"
-          class="option-btn"
-          :class="{
-            selected: selectedAnswer === opt,
-            correct: showResult && opt === currentQuestion.answer,
-            wrong: showResult && selectedAnswer === opt && opt !== currentQuestion.answer
-          }"
-          @click="selectAnswer(opt!)"
+      <!-- 选择/判断/填空 互动题（Leafer 画布，支持图文素材） -->
+      <div v-if="['choice', 'judge', 'fill'].includes(currentQuestion.type)" class="interactive-area">
+        <ChoiceQuestion
+          :question="currentQuestion"
           :disabled="showResult"
-        ><span class="opt-emoji">{{ getOptionEmoji(opt!) }}</span>{{ opt }}</button>
+          @result="submitInteractive"
+        />
       </div>
 
-      <!-- 判断题 -->
-      <div v-if="currentQuestion.type === 'judge'" class="options-grid options-grid-2">
-        <button
-          v-for="opt in ['对', '错']"
-          :key="opt"
-          class="option-btn"
-          :class="{
-            selected: selectedAnswer === opt,
-            correct: showResult && opt === currentQuestion.answer,
-            wrong: showResult && selectedAnswer === opt && opt !== currentQuestion.answer
-          }"
-          @click="selectAnswer(opt)"
+      <!-- 点击互动题（Leafer 画布） -->
+      <div v-if="currentQuestion.type === 'tap'" class="interactive-area">
+        <p class="interactive-tip">👆 在画布上点击正确答案</p>
+        <TapQuestion
+          :question="currentQuestion"
           :disabled="showResult"
-        >{{ opt === '对' ? '⭕ 对' : '❌ 错' }}</button>
+          @result="submitInteractive"
+        />
       </div>
 
-      <!-- 填空题 -->
-      <div v-if="currentQuestion.type === 'fill'" class="fill-area">
-        <div class="fill-options">
-          <button
-            v-for="opt in getFillOptions(currentQuestion)"
-            :key="opt"
-            class="option-btn fill-opt"
-            :class="{
-              selected: selectedAnswer === opt,
-              correct: showResult && opt === currentQuestion.answer,
-              wrong: showResult && selectedAnswer === opt && opt !== currentQuestion.answer
-            }"
-            @click="selectAnswer(opt)"
-            :disabled="showResult"
-          ><span class="opt-emoji">{{ getOptionEmoji(opt) }}</span>{{ opt }}</button>
-        </div>
+      <!-- 拖拽互动题（Leafer 画布） -->
+      <div v-if="currentQuestion.type === 'drag'" class="interactive-area">
+        <p class="interactive-tip">🤚 把上面的物品拖到正确的框里</p>
+        <DragQuestion
+          :question="currentQuestion"
+          :disabled="showResult"
+          @result="submitInteractive"
+        />
+      </div>
+
+      <!-- 连线互动题（Leafer 画布） -->
+      <div v-if="currentQuestion.type === 'connect'" class="interactive-area">
+        <p class="interactive-tip">✏️ 点左边再点右边，把对应的连起来</p>
+        <ConnectQuestion
+          :question="currentQuestion"
+          :disabled="showResult"
+          @result="submitInteractive"
+        />
       </div>
 
       <!-- 结果反馈 -->
@@ -401,6 +350,10 @@ function getFillOptions(q: Question): string[] {
 .fill-area { text-align: center; }
 .fill-options { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
 .fill-opt { min-width: 56px; padding: 12px 16px; font-size: var(--font-size-lg); }
+
+/* 互动题 */
+.interactive-area { text-align: center; }
+.interactive-tip { font-size: var(--font-size-sm); color: var(--text-secondary); margin-bottom: var(--space-3); padding: 4px 14px; background: #FFF7ED; border-radius: var(--radius-full); display: inline-block; }
 
 /* 结果反馈 */
 .result-feedback { text-align: center; margin-top: var(--space-5); animation: popIn 0.3s; }

@@ -88,14 +88,13 @@ const router = createRouter({
 })
 
 // 路由守卫 — 轻量快速，不等待异步操作
-router.beforeEach((to, from, next) => {
+router.beforeEach((to) => {
   const authStore = useAuthStore()
   const saved = localStorage.getItem('kids-learning-current-user')
 
   // 需要登录但未登录
   if (to.meta.requiresAuth && !authStore.currentUser && !saved) {
-    next({ name: 'login', query: { redirect: to.fullPath } })
-    return
+    return { name: 'login', query: { redirect: to.fullPath } }
   }
 
   // 已登录但 currentUser 未恢复 → 异步恢复（不阻塞跳转）
@@ -105,11 +104,10 @@ router.beforeEach((to, from, next) => {
 
   // 已登录状态下避免进入登录页
   if ((to.name === 'login' || to.name === 'register') && authStore.currentUser) {
-    next('/')
-    return
+    return '/'
   }
 
-  next()
+  return true
 })
 
 export default router

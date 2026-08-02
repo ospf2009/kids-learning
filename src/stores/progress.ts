@@ -54,6 +54,20 @@ export interface FrontQuizResult {
   date: string
 }
 
+/** 容错解析 options 字段：服务端该字段可能是 null / 空串 / 非 JSON 文本，
+ *  都统一回退为空数组，避免 JSON.parse 抛 "Unexpected end of JSON input" 中断整页加载 */
+function parseOptions(raw: string | null | undefined): string[] {
+  if (!raw) return []
+  const s = String(raw).trim()
+  if (!s) return []
+  try {
+    const v = JSON.parse(s)
+    return Array.isArray(v) ? v.map(String) : []
+  } catch {
+    return []
+  }
+}
+
 function mapWrongQuestion(w: ApiWrongQuestion): FrontWrongQuestion {
   return {
     id: w.id,
@@ -65,7 +79,7 @@ function mapWrongQuestion(w: ApiWrongQuestion): FrontWrongQuestion {
     question: w.question,
     userAnswer: w.user_answer,
     correctAnswer: w.correct_answer,
-    options: JSON.parse(w.options || '[]'),
+    options: parseOptions(w.options),
     date: w.date,
     retried: !!w.retried,
     retryCorrect: !!w.retry_correct,
@@ -102,6 +116,9 @@ export const useProgressStore = defineStore('progress', () => {
     wrongQuestions.value.filter(w => !w.retried || !w.retryCorrect)
   )
 
+  /** 待复习的错题队列（跨页面传递，避免 URL query 超长被截断） */
+  const reviewQueue = ref<FrontWrongQuestion[]>([])
+
   // 加载用户数据
   async function loadUserData() {
     const auth = useAuthStore()
@@ -129,9 +146,17 @@ export const useProgressStore = defineStore('progress', () => {
       todayQuestionCount.value = qCount
       todayStats.value = { correctAnswers: cCount, wrongAnswers: qCount - cCount, quizzesCompleted: quizCount }
 
-      // 加载错题
+      // 加载错题（逐条容错：单条解析失败不影响整页，其余错题照常展示）
       const wqData = await api.getWrongQuestions(userId)
-      wrongQuestions.value = wqData.questions.map(mapWrongQuestion)
+      const loaded: FrontWrongQuestion[] = []
+      for (const w of wqData.questions) {
+        try {
+          loaded.push(mapWrongQuestion(w))
+        } catch (err) {
+          console.warn('[progress] skip broken wrong-question:', w?.id, err)
+        }
+      }
+      wrongQuestions.value = loaded
     } catch (e) {
       console.error('Failed to load user data:', e)
     } finally {
@@ -231,9 +256,48 @@ export const useProgressStore = defineStore('progress', () => {
     todayStats,
     wrongQuestions,
     unretriedWrongQuestions,
+    reviewQueue,
+    setReviewQueue(list: FrontWrongQuestion[]) { reviewQueue.value = list },
+    clearReviewQueue() { reviewQueue.value = [] },
     loadUserData,
     getLastStudiedChapter,
     getCompletedCount,
     recordAnswer,
+    // === 错题操作（API 同步） ===
+    async removeWrong(id: string) {
+      try {
+        await api.deleteWrongQuestion(id)
+      } catch (e) {
+        console.error('[progress] remove wrong failed:', e)
+      }
+      wrongQuestions.value = wrongQuestions.value.filter(w => w.id !== id)
+    },
+    async clearAllWrong() {
+      const ids = wrongQuestions.value.map(w => w.id)
+      for (const id of ids) {
+        try { await api.deleteWrongQuestion(id) } catch (e) { console.error('[progress] clear wrong:', e) }
+      }
+      wrongQuestions.value = []
+    },
+    async clearMasteredWrong() {
+      const mastered = wrongQuestions.value.filter(w => w.retried && w.retryCorrect)
+      for (const w of mastered) {
+        try { await api.deleteWrongQuestion(w.id) } catch (e) { console.error('[progress] clear mastered:', e) }
+      }
+      wrongQuestions.value = wrongQuestions.value.filter(w => !(w.retried && w.retryCorrect))
+    },
+    /** 复习结果同步：retried + retryCorrect 写回 API 并刷新本地状态 */
+    async updateWrongRetry(id: string, retried: boolean, retryCorrect: boolean) {
+      try {
+        await api.updateWrongQuestionRetry(id, retried, retryCorrect)
+      } catch (e) {
+        console.error('[progress] update wrong retry failed:', e)
+      }
+      const w = wrongQuestions.value.find(x => x.id === id)
+      if (w) {
+        w.retried = retried
+        w.retryCorrect = retryCorrect
+      }
+    },
   }
 })

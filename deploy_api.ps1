@@ -1,10 +1,23 @@
+<#
+.SYNOPSIS
+  一键部署后端 API：FTP 上传 server/ 到服务器 api/ 目录，并自动 SSH 重启 node 进程。
+.DESCRIPTION
+  解决之前「文件传上去了但宝塔没重启导致接口 404」的问题。
+  执行：  powershell -ExecutionPolicy Bypass -File deploy_api.ps1 -SshUser root -SshPass "你的密码"
+#>
 param(
     [string]$LocalDir = "",
     [string]$FtpHost = "47.95.213.150",
     [int]$FtpPort = 21,
     [string]$FtpUser = "kids",
     [string]$FtpPass = "2ABepXASCEHjyxNh",
-    [string]$RemoteDir = "api"
+    [string]$RemoteDir = "api",
+    [string]$SshUser = "root",
+    [string]$SshPass = "",
+    [string]$SshHost = "47.95.213.150",
+    [int]$SshPort = 22,
+    [string]$Pm2Name = "kids-learning-api",
+    [string]$ServerJsPath = "/www/wwwroot/kids-learning/api/server.js"
 )
 
 $countSuccess = 0
@@ -25,7 +38,7 @@ $countTotal = $allFiles.Count
 Write-Host "LocalDir : $LocalDir"
 Write-Host "RemoteDir: $RemoteDir"
 
-# ===== 创建远端目录 =====
+# ===== 1. 创建远端目录 =====
 $apiParts = $RemoteDir.TrimEnd('/').Split("/")
 $apiCur = ""
 foreach ($p in $apiParts) {
@@ -42,7 +55,7 @@ foreach ($p in $apiParts) {
 }
 Write-Host ("OK  Directory ready: " + $RemoteDir)
 
-# ===== 容错清理：FTP 根目录下的怪文件 apiserver.js / apipackage.json =====
+# ===== 2. 容错清理旧 bug 生成的怪文件 =====
 foreach ($file in $allFiles) {
     $relativePath = $file.FullName.Substring($LocalDir.Length).TrimStart("\").Replace("\", "/")
     $fileNameOnly = Split-Path $relativePath -Leaf
@@ -58,7 +71,7 @@ foreach ($file in $allFiles) {
     } catch { }
 }
 
-# ===== 上传文件 =====
+# ===== 3. 上传文件 =====
 foreach ($file in $allFiles) {
     $relativePath = $file.FullName.Substring($LocalDir.Length).TrimStart("\").Replace("\", "/")
     $remotePath = $RemoteDir + $relativePath
@@ -103,5 +116,28 @@ foreach ($file in $allFiles) {
     }
 }
 
-Write-Host "=== DONE ==="
+Write-Host "=== UPLOAD DONE ==="
 Write-Host ("Total: " + $countTotal + " | OK: " + $countSuccess + " | FAIL: " + $countFail)
+
+# ===== 4. 自动 SSH 重启 node 进程 =====
+if ([string]::IsNullOrEmpty($SshPass)) {
+    Write-Host "WARN: 未提供 -SshPass，跳过自动重启。请手动在宝塔重启 node 项目。"
+    exit 0
+}
+
+Write-Host ">>> 正在 SSH 重启 node 进程..."
+
+$restartCmd = "pm2 restart $Pm2Name || (pkill -9 -f '$ServerJsPath'; pm2 start $ServerJsPath --name $Pm2Name)"
+$sshArgs = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p $SshPort ${SshUser}@${SshHost} $restartCmd"
+
+# 用 sshpass 风格：Windows 原生 ssh 不支持密码参数，需用 plink 或 Expect。
+# 优先尝试 plink（PuTTY 自带），否则提示手动。
+$plink = Get-Command plink -ErrorAction SilentlyContinue
+if ($plink) {
+    $env:PLINK_PASSWORD = $SshPass
+    & plink -batch -pw $SshPass -P $SshPort ${SshUser}@${SshHost} $restartCmd
+} else {
+    # 退而求其次：调用 Windows OpenSSH，借助 ssh -o 需要密钥；若无密钥则提示
+    Write-Host "WARN: 未检测到 plink。请安装 PuTTY 或配置 SSH 密钥后重试，或手动重启："
+    Write-Host ("  pm2 restart " + $Pm2Name)
+}

@@ -13,11 +13,81 @@ export interface Chapter {
 
 export interface Question {
   id: string
-  type: 'choice' | 'fill' | 'judge'
+  type: 'choice' | 'fill' | 'judge' | 'tap' | 'drag' | 'connect'
   question: string
   options?: string[]
   answer: string
   hint?: string
+  /**
+   * 笔画数（语文"xx字有几画"题使用）：在题干自动画出对应数量的小横杠，
+   * 帮助小朋友直观感知"几画"。不配置则不出图示。
+   */
+  strokes?: number
+  /**
+   * 分数示意（数学分数题使用）：{ numerator: 分子, denominator: 分母 }。
+   * 在题干画出被均分的圆并涂色对应份数，帮助理解分数。
+   */
+  fraction?: { numerator: number; denominator: number }
+  /**
+   * 互动题场景数据（tap/drag/connect 类型使用）。
+   * 老的 choice/fill/judge 题目不需要此字段，向后兼容。
+   */
+  scene?: QuestionScene
+}
+
+/**
+ * 互动题场景：在 Leafer 画布上渲染的图文内容。
+ * - tap：点击画布中正确的目标元素（如"点出所有动物"）
+ * - drag：把元素拖到正确的目标区域（如"把苹果拖进篮子"）
+ * - connect：用线把左右两两相连（如"汉字连拼音"）
+ */
+export interface QuestionScene {
+  /** 背景提示图片/emoji（可选） */
+  background?: string
+  /** 画布上可交互的元素列表 */
+  items: SceneItem[]
+  /** 连线题的左右两组（connect 类型使用） */
+  pairs?: ConnectPair[]
+  /** 拖拽题的目标放置区（drag 类型使用） */
+  targets?: DragTarget[]
+}
+
+export interface SceneItem {
+  id: string
+  label: string
+  emoji?: string
+  x: number
+  y: number
+  /** 该元素是否为正确答案（点击/拖拽命中判定用） */
+  isAnswer?: boolean
+  /**
+   * 图形素材：图片 URL（支持本地 /public 或远程）。
+   * 配置后选项卡片会显示该图片而非 emoji，实现图文并茂。
+   */
+  image?: string
+  /**
+   * 内置图形标记：渲染 Leafer 标准图形代替 emoji。
+   * 例如 'star'(五角星)、'circle'(圆)、'square'(方)、'triangle'(三角)。
+   * 适用于"下面哪个是圆形？"这类需要图形选项的题。
+   */
+  shape?: 'star' | 'circle' | 'square' | 'triangle' | 'heart' | 'diamond'
+  /** 图形填充色（配合 shape 使用） */
+  color?: string
+}
+
+export interface ConnectPair {
+  left: SceneItem
+  right: SceneItem
+}
+
+export interface DragTarget {
+  id: string
+  label: string
+  emoji?: string
+  x: number
+  y: number
+  /** 拖到该目标即正确的元素 id 集合 */
+  acceptIds: string[]
 }
 
 // ===== 一年级上册 - 语文 =====
@@ -33,11 +103,12 @@ const chinese1up: Chapter[] = [
     { id: 'py8', type: 'fill', question: 'b - a -> ___', answer: 'ba' },
     { id: 'py9', type: 'fill', question: 'm - a -> ___', answer: 'ma' },
     { id: 'py10', type: 'fill', question: 'p - o -> ___', answer: 'po' },
+    { id: 'py11', type: 'choice', question: '学拼音：单韵母 "a" 怎么写？', options: ['a', 'o', 'e'], answer: 'a' },
   ]},
   { id: 'ch1u-shengzi1', title: '一二三四五', icon: '1️⃣', description: '认识数字汉字', questions: [
     { id: 'sz1', type: 'choice', question: '"一" 是几？', options: ['1', '2', '3'], answer: '1' },
     { id: 'sz2', type: 'choice', question: '"三" 怎么写？', options: ['三横', '两横', '四横'], answer: '三横' },
-    { id: 'sz3', type: 'fill', question: '"五" 有几画？', answer: '4' },
+    { id: 'sz3', type: 'fill', question: '"五" 有几画？', answer: '4', strokes: 4 },
     { id: 'sz4', type: 'choice', question: '下面哪个字是"二"？', options: ['二', '三', '十'], answer: '二' },
     { id: 'sz5', type: 'judge', question: '"四" 有5画', answer: '对' },
     { id: 'sz6', type: 'fill', question: '1 2 3 4 5 -> 一 二 三 ___ 五', answer: '四' },
@@ -57,6 +128,52 @@ const chinese1up: Chapter[] = [
     { id: 'se8', type: 'fill', question: '金___水火土', answer: '木' },
     { id: 'se9', type: 'judge', question: '"日" 是太阳的意思', answer: '对' },
     { id: 'se10', type: 'choice', question: '"月" 指的是？', options: ['月亮', '太阳', '星星'], answer: '月亮' },
+    { id: 'se11', type: 'tap', question: '点出所有会飞的小动物', answer: '小鸟、蜜蜂', hint: '鸟和蜜蜂会飞哦',
+      scene: {
+        items: [
+          { id: 'bird', label: '小鸟', emoji: '🐦', x: 90, y: 90, isAnswer: true },
+          { id: 'fish', label: '小鱼', emoji: '🐟', x: 180, y: 90 },
+          { id: 'cat', label: '小猫', emoji: '🐱', x: 270, y: 90 },
+          { id: 'bee', label: '蜜蜂', emoji: '🐝', x: 90, y: 200, isAnswer: true },
+          { id: 'turtle', label: '乌龟', emoji: '🐢', x: 180, y: 200 },
+          { id: 'dog', label: '小狗', emoji: '🐶', x: 270, y: 200 },
+        ],
+      } },
+    { id: 'se11b', type: 'choice', question: '下面哪个图形有4个角？', answer: '正方形', hint: '数一数角的个数',
+      scene: {
+        items: [
+          { id: 'circle', label: '圆形', shape: 'circle', color: '#60A5FA', x: 60, y: 90 },
+          { id: 'square', label: '正方形', shape: 'square', color: '#22C55E', x: 180, y: 90 },
+          { id: 'star', label: '五角星', shape: 'star', color: '#F59E0B', x: 300, y: 90 },
+        ],
+      } },
+    { id: 'se11c', type: 'choice', question: '3 × 4 = ?', answer: '12', hint: '每排3个，一共有4排',
+      options: ['7', '10', '12', '14'] },
+    { id: 'se11d', type: 'choice', question: '图中的钟表显示的是 3时，请你选出来？', answer: '3时', hint: '看时针与分针的位置',
+      options: ['3时', '6时', '9时', '12时'] },
+    { id: 'se11e', type: 'choice', question: '5 > 3，下面哪边多？', answer: '左边多', hint: '大于号开口朝大的一边',
+      options: ['左边多', '右边多', '一样多'] },
+    { id: 'se12', type: 'drag', question: '把水果拖进果篮，蔬菜拖进菜篮', answer: '苹果、香蕉进果篮，胡萝卜、青菜进菜篮', hint: '想想哪些能吃甜甜的？',
+      scene: {
+        items: [
+          { id: 'apple', label: '苹果', emoji: '🍎', x: 60, y: 60 },
+          { id: 'banana', label: '香蕉', emoji: '🍌', x: 150, y: 60 },
+          { id: 'carrot', label: '胡萝卜', emoji: '🥕', x: 240, y: 60 },
+          { id: 'greens', label: '青菜', emoji: '🥬', x: 310, y: 60 },
+        ],
+        targets: [
+          { id: 'fruit', label: '果篮', emoji: '🧺', x: 40, y: 250, acceptIds: ['apple', 'banana'] },
+          { id: 'veg', label: '菜篮', emoji: '🥬', x: 200, y: 250, acceptIds: ['carrot', 'greens'] },
+        ],
+      } },
+    { id: 'se13', type: 'connect', question: '把汉字和对应的拼音连起来', answer: '日-rì、月-yuè', hint: '看拼音的读音想一想',
+      scene: {
+        pairs: [
+          { left: { id: 'cn-ri', label: '日', x: 70, y: 70 }, right: { id: 'py-yue', label: 'yuè', x: 290, y: 70 } },
+          { left: { id: 'cn-yue', label: '月', x: 70, y: 170 }, right: { id: 'py-ri', label: 'rì', x: 290, y: 170 } },
+          { left: { id: 'cn-shui', label: '水', x: 70, y: 270 }, right: { id: 'py-shui', label: 'shuǐ', x: 290, y: 270 } },
+        ],
+      } },
   ]},
 ]
 
@@ -162,7 +279,7 @@ const chinese1down: Chapter[] = [
     { id: 'cd5', type: 'choice', question: '"雪" 和哪个季节有关？', options: ['春天', '夏天', '冬天'], answer: '冬天' },
     { id: 'cd6', type: 'fill', question: '春风___雨', answer: '夏' },
     { id: 'cd7', type: 'judge', question: '秋天叶子变黄', answer: '对' },
-    { id: 'cd8', type: 'choice', question: '"飞" 字有几画？', options: ['3', '4', '5'], answer: '3' },
+    { id: 'cd8', type: 'choice', question: '"飞" 字有几画？', options: ['3', '4', '5'], answer: '3', strokes: 3 },
     { id: 'cd9', type: 'fill', question: '___虫 ___鸟', answer: '飞' },
     { id: 'cd10', type: 'choice', question: '"入" 的反义词是？', options: ['出', '大', '上'], answer: '出' },
   ]},
@@ -230,6 +347,12 @@ const math1down: Chapter[] = [
     { id: 'mdm9', type: 'fill', question: '3元5角 + 5角 = ___元', answer: '4' },
     { id: 'mdm10', type: 'choice', question: '买一个8角的橡皮，付1元，找回？', options: ['1角', '2角', '3角'], answer: '2角' },
   ]},
+  { id: 'm1d-frac', title: '认识分数', icon: '🍕', description: '几分之一', questions: [
+    { id: 'mdf1', type: 'choice', question: '把一个披萨平均分成2份，1份是几分之几？', options: ['1/2', '1/3', '1/4'], answer: '1/2', fraction: { numerator: 1, denominator: 2 } },
+    { id: 'mdf2', type: 'choice', question: '一个蛋糕分成4份，涂了1份，是几分之几？', options: ['1/2', '1/4', '1/3'], answer: '1/4', fraction: { numerator: 1, denominator: 4 } },
+    { id: 'mdf3', type: 'fill', question: '圆分成3份，涂了2份，是___', answer: '2/3', fraction: { numerator: 2, denominator: 3 } },
+    { id: 'mdf4', type: 'choice', question: '哪个表示"一半"？', options: ['1/2', '1/4', '1/3'], answer: '1/2', fraction: { numerator: 1, denominator: 2 } },
+  ]},
 ]
 
 // ===== 一年级下册 - 英语 =====
@@ -283,7 +406,7 @@ const chinese2up: Chapter[] = [  // 第一单元 - 阅读
     { id: 'g2u-1-6', type: 'choice', question: '青蛙吃什么？', options: ['害虫', '水草', '小鱼', '泥巴'], answer: '害虫' },
     { id: 'g2u-1-7', type: 'fill', question: '青蛙披着碧绿的衣____', answer: '裳' },
     { id: 'g2u-1-8', type: 'judge', question: '小蝌蚪先长前腿再长后腿', answer: '错' },
-    { id: 'g2u-1-9', type: 'choice', question: '"甩"字有几画？', options: ['5', '4', '6', '3'], answer: '5' },
+    { id: 'g2u-1-9', type: 'choice', question: '"甩"字有几画？', options: ['5', '4', '6', '3'], answer: '5', strokes: 5 },
     { id: 'g2u-1-10', type: 'fill', question: '小蝌蚪大大的脑____', answer: '袋' },
     { id: 'g2u-1-11', type: 'choice', question: '"蝌蚪"两个字都是什么部首？', options: ['虫字旁', '鱼字旁', '三点水', '草字头'], answer: '虫字旁' },
     { id: 'g2u-1-12', type: 'fill', question: '小蝌蚪大大的脑袋，黑灰色的身____，长长的尾巴', answer: '子' },
@@ -711,7 +834,7 @@ const chinese2up: Chapter[] = [  // 第一单元 - 阅读
     { id: 'g2u-13-27', type: 'choice', question: '"风景"的"景"是什么结构？', options: ['上下', '左右', '半包围', '独体'], answer: '上下' },
     { id: 'g2u-13-28', type: 'judge', question: '黄山奇石只有猴子观海', answer: '错' },
     { id: 'g2u-13-29', type: 'fill', question: '那巨石真像一位仙人，伸着手臂指向____方', answer: '前' },
-    { id: 'g2u-13-30', type: 'choice', question: '"区"字有几画？', options: ['4', '3', '5', '6'], answer: '4' },
+    { id: 'g2u-13-30', type: 'choice', question: '"区"字有几画？', options: ['4', '3', '5', '6'], answer: '4', strokes: 4 },
   ]},
   { id: 'ch2u-14', title: '日月潭', icon: '书', description: '第九课 日月潭', questions: [
     { id: 'g2u-14-1', type: 'choice', question: '日月潭在哪个省？', options: ['台湾省', '福建省', '浙江省', '广东省'], answer: '台湾省' },

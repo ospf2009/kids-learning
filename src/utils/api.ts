@@ -120,6 +120,30 @@ export const api = {
     })
   },
 
+  /** 预览错题本历史脏数据（user_answer 为 '__wrong__' 等占位符），不改动数据 */
+  previewWrongQuestionCleanup(userId?: string) {
+    const qs = userId ? `?userId=${encodeURIComponent(userId)}` : ''
+    return request<{
+      dirtyCount: number
+      totalCount: number
+      samples: Array<{
+        id: string; user_id: string; question: string
+        user_answer: string; correct_answer: string; date: string
+      }>
+    }>(`/api/wrong-questions/cleanup/preview${qs}`)
+  },
+
+  /** 清洗错题本历史脏数据
+   *  mode='delete' 删除脏记录；mode='fix' 把 user_answer 改写为 replacement */
+  cleanupWrongQuestions(opts?: {
+    mode?: 'delete' | 'fix'; userId?: string; replacement?: string
+  }) {
+    return request<{ success: boolean; mode: string; affected: number }>(
+      '/api/wrong-questions/cleanup',
+      { method: 'POST', body: JSON.stringify(opts || {}) }
+    )
+  },
+
   // 测验结果
   addQuizResult(data: {
     userId: string; chapterId: string; subject: string; gradeId: string;
