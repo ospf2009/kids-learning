@@ -27,6 +27,7 @@ const gameSpeed = ref(350)
 const container = ref<HTMLDivElement | null>(null)
 let leafer: any = null
 let gridLayer: any = null
+let playLayer: any = null
 let gameLoop: ReturnType<typeof setInterval> | null = null
 
 const audioCtx = ref<AudioContext | null>(null)
@@ -103,12 +104,12 @@ function drawGrid() {
 
 function draw() {
   if (!leafer) return
-  // 移除上一帧的蛇与食物层
-  const old = leafer.children.find((c: any) => c.tag === 'play')
-  if (old) old.remove()
+  // 移除上一帧的蛇与食物层（Leafer 的 tag 是只读类型标识，不能用来自定义标记，
+  // 因此用模块级变量直接持有并在每帧重建前移除，避免旧层堆积）
+  if (playLayer) { playLayer.remove(); playLayer = null }
 
   const play = new Group({} as any)
-  play.tag = 'play'
+  playLayer = play
 
   // 食物
   const fx = food.value.x * CELL_SIZE

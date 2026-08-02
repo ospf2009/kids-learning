@@ -29,6 +29,7 @@ const stars: Array<{ node: any; y: number; speed: number }> = []
 const bombs: Array<{ node: any; y: number; speed: number }> = []
 
 let leafer: any = null
+let bgNode: any = null
 let playerNode: any = null
 let scoreText: any = null
 let starTimer: ReturnType<typeof setInterval> | null = null
@@ -37,10 +38,13 @@ let loopTimer: ReturnType<typeof setInterval> | null = null
 let startTime = 0
 
 function buildStar(x: number, y: number): any {
+  // 用固定 width/height 锁定尺寸，x/y 即包围盒左上角，避免半径推导导致星星过大
   const s = new Star({
     x, y,
+    width: itemSize,
+    height: itemSize,
     innerRadius: itemSize * 0.4,
-    outerRadius: itemSize * 0.5,
+    outerRadius: itemSize * 0.48,
     points: 5,
     fill: '#FFD93D',
     stroke: '#F4C430',
@@ -50,7 +54,7 @@ function buildStar(x: number, y: number): any {
 }
 
 function buildBomb(x: number, y: number): any {
-  const g = new Group({ x, y } as any)
+  const g = new Group({ x, y, width: itemSize, height: itemSize } as any)
   const body = new Polygon({
     width: itemSize, height: itemSize,
     sides: 0, points: '0,6 10,0 20,6 16,22 4,22',
@@ -96,8 +100,8 @@ function makeLabel(text: string, color = '#fff', size = 16): any {
 
 function startGame() {
   if (!leafer) return
-  // 清空旧节点
-  ;[...leafer.children].forEach((c: any) => { if (c.tag !== 'bg') c.remove() })
+  // 清空旧节点：移除除背景外的所有动态节点
+  ;[...leafer.children].forEach((c: any) => { if (c !== bgNode) c.remove() })
   stars.length = 0
   bombs.length = 0
   score.value = 0
@@ -144,20 +148,20 @@ function gameLoop() {
   if (!isPlaying.value || !leafer) return
   const playerTop = gameHeight - playerHeight - 10
 
-  // 移动星星
+  // 移动星星（node.x/node.y 为包围盒左上角，尺寸 itemSize）
   for (let i = stars.length - 1; i >= 0; i--) {
     const s = stars[i]
     s.y += s.speed
     s.node.y = s.y
-    if (s.y > gameHeight + itemSize) {
+    if (s.y > gameHeight) {
       s.node.remove(); stars.splice(i, 1); continue
     }
-    // 接住判定
+    // 接住判定：星星底边进入接盘区，且水平重叠
     if (
-      s.y + itemSize > playerTop &&
-      s.y - itemSize < gameHeight - 10 &&
-      s.node.x + itemSize > playerX.value &&
-      s.node.x - itemSize < playerX.value + playerWidth
+      s.y + itemSize >= playerTop &&
+      s.y <= gameHeight - 10 &&
+      s.node.x + itemSize >= playerX.value &&
+      s.node.x <= playerX.value + playerWidth
     ) {
       s.node.remove(); stars.splice(i, 1)
       score.value += 10
@@ -171,14 +175,14 @@ function gameLoop() {
     const b = bombs[i]
     b.y += b.speed
     b.node.y = b.y
-    if (b.y > gameHeight + itemSize) {
+    if (b.y > gameHeight) {
       b.node.remove(); bombs.splice(i, 1); continue
     }
     if (
-      b.y + itemSize > playerTop &&
-      b.y - itemSize < gameHeight - 10 &&
-      b.node.x + itemSize > playerX.value &&
-      b.node.x - itemSize < playerX.value + playerWidth
+      b.y + itemSize >= playerTop &&
+      b.y <= gameHeight - 10 &&
+      b.node.x + itemSize >= playerX.value &&
+      b.node.x <= playerX.value + playerWidth
     ) {
       b.node.remove(); bombs.splice(i, 1)
       lives.value--
@@ -233,7 +237,7 @@ onMounted(() => {
     fill: '#16213e',
   } as any)
   const bg = buildBackground()
-  bg.tag = 'bg'
+  bgNode = bg
   leafer.add(bg as any)
 })
 
